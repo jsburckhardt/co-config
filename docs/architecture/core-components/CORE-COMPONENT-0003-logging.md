@@ -26,7 +26,7 @@ All packages in the `ccc` application. Logging output must not interfere with Bu
 - Other packages use `slog.Debug()`, `slog.Info()`, `slog.Warn()`, `slog.Error()` directly
 
 ### Expectations
-- Log file is created on first write, not on startup
+- Log file is created during `logging.Init()` to ensure write access is verified early; this avoids silent failures on first log entry
 - Log rotation is out of scope for v1 — users can delete the file manually
 - Debug-level logs include function names and relevant variable values
 - Error-level logs include the full error chain
