@@ -1,0 +1,10 @@
+{
+  "banner": "never",
+  "copilot_tokens": {
+    "host:user": "token_value"
+  },
+  "model": "claude-sonnet-4.5",
+  "staff": true,
+  "custom_unknown_field": "preserve_me",
+  "log_level": "all"
+}
