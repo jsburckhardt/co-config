@@ -6,13 +6,16 @@ This file is the single registry of all architectural decisions and core-compone
 
 | ID | Title | Status | Date |
 |----|-------|--------|------|
-| _No ADRs yet. Copy `ADR-0001-template.md` in this directory and rename it._ | | | |
+| ADR-0002 | [Go with Charm TUI Stack](ADR-0002-go-charm-tui-stack.md) | Accepted | 2026-02-20 |
 
 ## Core-Components
 
 | ID | Title | Status | Date |
 |----|-------|--------|------|
-| _No core-components yet. Copy `CORE-COMPONENT-0001-template.md` from `../core-components/` and rename it._ | | | |
+| CC-0002 | [Error Handling](../core-components/CORE-COMPONENT-0002-error-handling.md) | Adopted | 2026-02-20 |
+| CC-0003 | [Logging](../core-components/CORE-COMPONENT-0003-logging.md) | Adopted | 2026-02-20 |
+| CC-0004 | [Configuration Management](../core-components/CORE-COMPONENT-0004-configuration-management.md) | Adopted | 2026-02-20 |
+| CC-0005 | [Sensitive Data Handling](../core-components/CORE-COMPONENT-0005-sensitive-data-handling.md) | Adopted | 2026-02-20 |
 
 ## Decisions
 
@@ -20,4 +23,12 @@ Short, actionable statements derived from ADRs and core-components. More than on
 
 | # | Decision | Source | Date |
 |---|----------|--------|------|
-| _No decisions yet._ | | | |
+| 1 | Use Go as the implementation language for `ccc` | ADR-0002 | 2026-02-20 |
+| 2 | Use Bubbletea + Lipgloss + Huh (Charm stack) for the TUI | ADR-0002 | 2026-02-20 |
+| 3 | Use `go test` as the test runner | ADR-0002 | 2026-02-20 |
+| 4 | Wrap errors with `fmt.Errorf` and `%w`; define sentinel errors per package | CC-0002 | 2026-02-20 |
+| 5 | Log to file (`~/.copilot/ccc.log`) using `log/slog`; never write to stdout | CC-0003 | 2026-02-20 |
+| 6 | Auto-detect config schema by running `copilot help config` at startup | CC-0004 | 2026-02-20 |
+| 7 | Preserve unknown config fields on round-trip (no data loss) | CC-0004 | 2026-02-20 |
+| 8 | Mask sensitive fields with truncated SHA-256 hash; make them read-only | CC-0005 | 2026-02-20 |
+| 9 | Never log sensitive data (tokens, credentials) at any level | CC-0005 | 2026-02-20 |

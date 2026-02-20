@@ -2,20 +2,28 @@ AGENTS.md                                                   — Agent definition
 CONTRIBUTING.md                                             — Human contribution guide
 LLM.txt                                                     — This file; repo map for AI agents
 README.md                                                   — Project overview
+go.mod                                                      — Go module definition
 .devcontainer/devcontainer.json                             — Dev container configuration
 .github/agents/architect.agent.md                      — Architect agent (ADRs, core-components, action plans)
 .github/agents/aps-v1.1.11.agent.md                         — APS prompt generator agent
+.github/agents/bootstrap.agent.md                           — Bootstrap agent (project scaffolding)
 .github/agents/excali.agent.md                              — Excalidraw diagram agent
 .github/agents/implementer.agent.md                   — Implementer agent (code, tests, verification)
 .github/agents/planner.agent.md                       — Planner agent (task breakdown, test plans)
 .github/agents/research.agent.md                      — Research agent (exploration, scope classification)
+.github/agents/ship-it.agent.md                             — Ship-it agent (commits, PRs)
 docs/README.md                                              — Docs directory index
-docs/application/README.md                                  — Application-specific documentation
+docs/application/README.md                                  — Application-specific documentation (ccc)
 docs/architecture/README.md                                 — Architecture documentation index
 docs/architecture/soft-factory-pipeline.excalidraw          — Pipeline diagram source
 docs/architecture/ADR/ADR-0001-template.md                  — ADR template (read-only, copy to create new)
+docs/architecture/ADR/ADR-0002-go-charm-tui-stack.md        — ADR: Go + Charm TUI stack decision
 docs/architecture/ADR/DECISION-LOG.md                       — Registry of all ADR and core-component decisions
 docs/architecture/core-components/CORE-COMPONENT-0001-template.md — Core-component template (read-only, copy to create new)
+docs/architecture/core-components/CORE-COMPONENT-0002-error-handling.md — Error handling conventions
+docs/architecture/core-components/CORE-COMPONENT-0003-logging.md — Structured logging with slog
+docs/architecture/core-components/CORE-COMPONENT-0004-configuration-management.md — Config read/write/schema detection
+docs/architecture/core-components/CORE-COMPONENT-0005-sensitive-data-handling.md — Token masking and sensitive field rules
 docs/architecture/core-components/README.md                 — Core-components index
 docs/workitems/README.md                                    — Workitems index and naming conventions
 docs/workitems/WI-0001-example/README.md                    — Example workitem overview
