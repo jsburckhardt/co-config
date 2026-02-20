@@ -1,0 +1,88 @@
+Configuration Settings:
+
+  `allowed_urls`: list of URLs or domains that are allowed to be accessed without prompting.
+    Supports exact URLs (e.g., "https://github.com"), domain patterns (e.g., "github.com"),
+    and wildcard subdomains (e.g., "*.github.com").
+
+  `alt_screen`: whether to use the terminal alternate screen buffer; defaults to `false`.
+    - Can also be set with --alt-screen on/off, --alt-screen, or --no-alt-screen
+    - Using either flag persists the preference to config
+
+  `auto_update`: whether to automatically download updated CLI versions; defaults to `true`.
+
+  `bash_env`: whether to enable BASH_ENV support for bash shells; defaults to `false`.
+    - Can also be set with --bash-env on/off, --bash-env, or --no-bash-env
+    - Using either flag persists the preference to config
+
+  `banner`: frequency of showing animated banner; defaults to "once".
+    - "always" displays it every time
+    - "never" disables it
+    - "once" displays it the first time
+
+  `beep`: whether to beep when user attention is required; defaults to `true`.
+
+  `include_coauthor`: whether to instruct the agent to add a Co-authored-by trailer to git commits; defaults to `true`.
+
+  `compact_paste`: whether to collapse large pasted content into compact tokens; defaults to `true`.
+    - When `true` (default), pastes with more than 10 lines are displayed as `[Paste #N - X lines]`
+    - When `false`, all pasted content is displayed directly in the input
+
+  `custom_agents.default_local_only`: whether to default to only use local custom agents (no remote org/enterprise); defaults to `false`.
+
+  `denied_urls`: list of URLs or domains that are denied access. Denial rules take precedence
+    over allow rules.
+
+  `experimental`: whether to enable experimental features; defaults to `false`.
+    - Can be enabled with --experimental flag or /experimental command
+
+  `launch_messages`: list of messages to display in the banner on startup.
+    - One message is randomly selected each time the CLI starts
+    - Useful for team announcements or reminders
+
+  `log_level`: log level for CLI; defaults to "default". Set to "all" for debug logging.
+
+  `model`: AI model to use for Copilot CLI; can be changed with /model command or --model flag option.
+    - "claude-sonnet-4.6"
+    - "claude-sonnet-4.5"
+    - "claude-haiku-4.5"
+    - "claude-opus-4.6"
+    - "claude-opus-4.6-fast"
+    - "claude-opus-4.5"
+    - "claude-sonnet-4"
+    - "gemini-3-pro-preview"
+    - "gpt-5.3-codex"
+    - "gpt-5.2-codex"
+    - "gpt-5.2"
+    - "gpt-5.1-codex-max"
+    - "gpt-5.1-codex"
+    - "gpt-5.1"
+    - "gpt-5.1-codex-mini"
+    - "gpt-5-mini"
+    - "gpt-4.1"
+
+  `streamer_mode`: whether to enable streamer mode; defaults to `false`.
+    - Hides preview model names and quota details (useful for streaming or screen sharing)
+    - Can be toggled with /streamer-mode command; persists across sessions
+
+  `parallel_tool_execution`: whether to enable parallel execution of tools; defaults to `true`.
+    - Can be disabled with --disable-parallel-tools-execution flag
+
+  `render_markdown`: whether to render markdown in the terminal; defaults to `true`.
+
+  `screen_reader`: whether to enable screen reader optimizations; defaults to `false`.
+
+  `stream`: whether to enable streaming mode; defaults to `true`.
+
+  `theme`: theme to color and stylize output; defaults to "auto".
+    - "auto" detects terminal background and decides based on luminosity
+    - "dark" uses contrasting ANSI colors for dark backgrounds
+    - "light" uses contrasting ANSI colors for light backgrounds
+
+  `trusted_folders`: list of folders where permission to read or execute files has been granted.
+
+  `undo_without_confirmation` (experimental): whether to skip the undo confirmation when pressing Esc Esc; defaults to `false`.
+    - When `true`, double-escape will immediately undo to the previous snapshot
+
+  `update_terminal_title`: whether to update the terminal tab/window title with current intent; defaults to `true`.
+    - Shows what the agent is currently working on in the terminal title bar
+    - Only works on supported terminal emulators (xterm, iTerm, Windows Terminal, etc.)
