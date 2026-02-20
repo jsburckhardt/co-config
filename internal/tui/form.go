@@ -43,6 +43,16 @@ func BuildForm(cfg *config.Config, schema []copilot.SchemaField) (*huh.Form, *Fo
 			continue
 		}
 
+		// Also check if the current value looks like a token (CC-0005)
+		if strVal, ok := cfg.Get(sf.Name).(string); ok && sensitive.LooksLikeToken(strVal) {
+			masked := sensitive.MaskValue(strVal)
+			note := huh.NewNote().
+				Title(sf.Name).
+				Description(fmt.Sprintf("Value: %s (read-only — token detected)", masked))
+			sensitiveNotes = append(sensitiveNotes, note)
+			continue
+		}
+
 		field := buildField(sf, cfg, result)
 		if field == nil {
 			continue
@@ -77,17 +87,21 @@ func BuildForm(cfg *config.Config, schema []copilot.SchemaField) (*huh.Form, *Fo
 	
 	for _, key := range undocumentedKeys {
 		val := cfg.Get(key)
-		if strVal, ok := val.(string); ok {
-			// Store a pointer to a new string variable
-			ptr := new(string)
-			*ptr = strVal
-			result.Values[key] = ptr
-			input := huh.NewInput().
+		// Also check if value looks like a token
+		if strVal, ok := val.(string); ok && sensitive.LooksLikeToken(strVal) {
+			masked := sensitive.MaskValue(val)
+			note := huh.NewNote().
 				Title(key).
-				Value(ptr).
-				Description("(undocumented)")
-			generalFields = append(generalFields, input)
+				Description(fmt.Sprintf("Value: %s (read-only — token detected)", masked))
+			sensitiveNotes = append(sensitiveNotes, note)
+			continue
 		}
+		// Undocumented fields are read-only to preserve them unchanged (CC-0004)
+		displayVal := fmt.Sprintf("%v", val)
+		note := huh.NewNote().
+			Title(key).
+			Description(fmt.Sprintf("Value: %s (read-only — undocumented)", displayVal))
+		generalFields = append(generalFields, note)
 	}
 
 	// Build groups

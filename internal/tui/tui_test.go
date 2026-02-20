@@ -231,6 +231,23 @@ func TestFieldCategorization(t *testing.T) {
 	// when categorizing different field types
 }
 
+// Test that token-like values are treated as sensitive
+func TestBuildFormTokenValueTreatedAsSensitive(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("custom_field", "ghp_abc123secrettoken")
+
+	schema := []copilot.SchemaField{
+		{Name: "custom_field", Type: "string", Default: "", Description: "A custom field"},
+	}
+
+	_, result := BuildForm(cfg, schema)
+
+	// Token-like value should NOT be in editable Values
+	if _, ok := result.Values["custom_field"]; ok {
+		t.Error("Expected token-like value field to be excluded from editable Values")
+	}
+}
+
 // Test undocumented keys are sorted alphabetically
 func TestUndocumentedKeysSorted(t *testing.T) {
 	cfg := config.NewConfig()
@@ -250,48 +267,16 @@ func TestUndocumentedKeysSorted(t *testing.T) {
 		t.Fatal("BuildForm returned nil form")
 	}
 
-	// Extract the keys from result.Values to verify ordering
-	var keys []string
-	for key := range result.Values {
-		// Only check undocumented keys (not "model")
-		if key != "model" {
-			keys = append(keys, key)
+	// Undocumented keys should NOT be in editable result.Values (they're read-only)
+	undocKeys := []string{"apple_key", "banana_key", "middle_key", "zebra_key"}
+	for _, key := range undocKeys {
+		if _, ok := result.Values[key]; ok {
+			t.Errorf("Undocumented key %q should not be in editable result.Values", key)
 		}
 	}
 
-	// Expected order: alphabetical
-	expected := []string{"apple_key", "banana_key", "middle_key", "zebra_key"}
-	
-	if len(keys) != len(expected) {
-		t.Fatalf("Expected %d undocumented keys, got %d", len(expected), len(keys))
-	}
-
-	// Since result.Values is a map, we need to sort the keys we extracted
-	// to compare with expected order. The actual test is that when we
-	// run BuildForm multiple times, we get the same order.
-	// Let's run it multiple times and verify consistency
-	for i := 0; i < 5; i++ {
-		_, result2 := BuildForm(cfg, schema)
-		var keys2 []string
-		for key := range result2.Values {
-			if key != "model" {
-				keys2 = append(keys2, key)
-			}
-		}
-		
-		if len(keys2) != len(expected) {
-			t.Fatalf("Iteration %d: Expected %d undocumented keys, got %d", i, len(expected), len(keys2))
-		}
-		
-		// The keys should all be present
-		keyMap := make(map[string]bool)
-		for _, k := range keys2 {
-			keyMap[k] = true
-		}
-		for _, expKey := range expected {
-			if !keyMap[expKey] {
-				t.Errorf("Iteration %d: Expected key %q not found", i, expKey)
-			}
-		}
+	// model should still be in result.Values
+	if _, ok := result.Values["model"]; !ok {
+		t.Error("Expected model in result.Values")
 	}
 }

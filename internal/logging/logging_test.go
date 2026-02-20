@@ -145,9 +145,18 @@ func TestInit_InvalidPathReturnsError(t *testing.T) {
 		Shutdown()
 	})
 
-	// Try to create log file in a path where we cannot create parent directory
-	// Use a path that would require root permissions
-	invalidPath := "/root/forbidden/test.log"
+	// Create a temp dir, then make it read-only so MkdirAll fails inside it
+	tempDir := t.TempDir()
+	readOnlyDir := filepath.Join(tempDir, "readonly")
+	if err := os.Mkdir(readOnlyDir, 0500); err != nil {
+		t.Fatalf("Failed to create read-only dir: %v", err)
+	}
+	// Ensure we restore permissions so t.TempDir cleanup works
+	t.Cleanup(func() {
+		os.Chmod(readOnlyDir, 0700)
+	})
+
+	invalidPath := filepath.Join(readOnlyDir, "subdir", "test.log")
 
 	err := Init(slog.LevelWarn, invalidPath)
 	if err == nil {

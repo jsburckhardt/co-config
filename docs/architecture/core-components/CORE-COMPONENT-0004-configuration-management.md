@@ -19,7 +19,7 @@ The `internal/config` package. Affects how the TUI presents config fields and ho
 - Config is read as raw JSON and decoded into a typed struct for known fields; unknown fields are preserved via a `map[string]any` catch-all
 - Config schema (available keys, types, defaults, descriptions) is auto-detected at startup by running `copilot help config` and parsing the output
 - The installed copilot version is detected by running `copilot version` and parsing the output
-- When writing config, only known editable fields are updated; sensitive and unknown fields are preserved unchanged
+- When writing config, only known editable fields are updated; sensitive, token-like, and unknown fields are preserved unchanged and displayed as read-only in the TUI
 - Config validation occurs before writing — invalid values are rejected with user-friendly errors
 
 ### Interfaces
