@@ -14,7 +14,9 @@ var logFile *os.File
 func Init(level slog.Level, logPath string) error {
 	// Close existing log file if open
 	if logFile != nil {
-		logFile.Close()
+		if err := logFile.Close(); err != nil {
+			return fmt.Errorf("closing existing log file: %w", err)
+		}
 		logFile = nil
 	}
 
