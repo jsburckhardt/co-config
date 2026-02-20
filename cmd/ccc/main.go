@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -35,13 +36,21 @@ func main() {
 }
 
 func run(cmd *cobra.Command, args []string) error {
+	// Set slog to discard before Init to avoid breaking Bubbletea if logging.Init fails
+	slog.SetDefault(slog.New(slog.NewTextHandler(io.Discard, nil)))
+
 	// Initialize logging
 	logLevel, _ := cmd.Flags().GetString("log-level")
-	logDir := filepath.Join(config.DefaultPath(), "..")
+	// Support CCC_LOG_LEVEL environment variable
+	if envLevel := os.Getenv("CCC_LOG_LEVEL"); envLevel != "" && !cmd.Flags().Changed("log-level") {
+		logLevel = envLevel
+	}
+	logDir := filepath.Dir(config.DefaultPath())
 	logPath := filepath.Join(logDir, "ccc.log")
 	if err := logging.Init(logging.ParseLevel(logLevel), logPath); err != nil {
 		slog.Warn("failed to initialize logging", "error", err)
 	}
+	defer logging.Shutdown()
 	slog.Info("ccc starting", "version", version)
 
 	// Detect copilot version

@@ -18,10 +18,15 @@ type SchemaField struct {
 
 // DetectVersion runs `copilot version` and parses the version string
 func DetectVersion() (string, error) {
+	// First check if copilot binary exists
+	if _, err := exec.LookPath("copilot"); err != nil {
+		return "", ErrCopilotNotInstalled
+	}
+	
 	cmd := exec.Command("copilot", "version")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("%w: %v", ErrCopilotNotInstalled, err)
+		return "", fmt.Errorf("failed to execute copilot version: %w", err)
 	}
 	return ParseVersion(string(output))
 }
@@ -39,10 +44,15 @@ func ParseVersion(output string) (string, error) {
 
 // DetectSchema runs `copilot help config` and parses all settings into SchemaField structs
 func DetectSchema() ([]SchemaField, error) {
+	// First check if copilot binary exists
+	if _, err := exec.LookPath("copilot"); err != nil {
+		return nil, ErrCopilotNotInstalled
+	}
+	
 	cmd := exec.Command("copilot", "help", "config")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrCopilotNotInstalled, err)
+		return nil, fmt.Errorf("failed to execute copilot help config: %w", err)
 	}
 	return ParseSchema(string(output))
 }

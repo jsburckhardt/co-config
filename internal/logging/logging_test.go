@@ -18,6 +18,7 @@ func TestInit_CreatesLogFile(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
+		Shutdown()
 	})
 
 	err := Init(slog.LevelWarn, logPath)
@@ -39,6 +40,7 @@ func TestInit_WarnLevelWritesWarnEntry(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
+		Shutdown()
 	})
 
 	err := Init(slog.LevelWarn, logPath)
@@ -75,6 +77,7 @@ func TestInit_InfoFilteredAtWarnLevel(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
+		Shutdown()
 	})
 
 	err := Init(slog.LevelWarn, logPath)
@@ -105,6 +108,7 @@ func TestInit_DebugLevelWritesDebugEntry(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
+		Shutdown()
 	})
 
 	err := Init(slog.LevelDebug, logPath)
@@ -138,10 +142,12 @@ func TestInit_InvalidPathReturnsError(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
+		Shutdown()
 	})
 
-	// Try to create log file in a non-existent directory
-	invalidPath := "/nonexistent/directory/test.log"
+	// Try to create log file in a path where we cannot create parent directory
+	// Use a path that would require root permissions
+	invalidPath := "/root/forbidden/test.log"
 
 	err := Init(slog.LevelWarn, invalidPath)
 	if err == nil {
@@ -161,8 +167,11 @@ func TestParseLevel_AllCases(t *testing.T) {
 		{"error", slog.LevelError},
 		{"unknown", slog.LevelWarn},  // default
 		{"", slog.LevelWarn},          // default
-		{"DEBUG", slog.LevelWarn},     // case-sensitive, returns default
-		{"Info", slog.LevelWarn},      // case-sensitive, returns default
+		{"DEBUG", slog.LevelDebug},    // case-insensitive
+		{"Info", slog.LevelInfo},      // case-insensitive
+		{"WARN", slog.LevelWarn},      // case-insensitive
+		{"  debug  ", slog.LevelDebug}, // with whitespace
+		{" INFO ", slog.LevelInfo},     // with whitespace
 	}
 
 	for _, tt := range tests {
@@ -172,5 +181,139 @@ func TestParseLevel_AllCases(t *testing.T) {
 				t.Errorf("ParseLevel(%q) = %v, want %v", tt.input, result, tt.expected)
 			}
 		})
+	}
+}
+
+// Test Shutdown closes log file
+func TestShutdown_ClosesLogFile(t *testing.T) {
+	tempDir := t.TempDir()
+	logPath := filepath.Join(tempDir, "test.log")
+
+	originalLogger := slog.Default()
+	t.Cleanup(func() {
+		slog.SetDefault(originalLogger)
+	})
+
+	// Initialize logger
+	err := Init(slog.LevelWarn, logPath)
+	if err != nil {
+		t.Fatalf("Init failed: %v", err)
+	}
+
+	// Shutdown should close the file without error
+	err = Shutdown()
+	if err != nil {
+		t.Errorf("Shutdown returned error: %v", err)
+	}
+
+	// Calling Shutdown again should not error (file already closed)
+	err = Shutdown()
+	if err != nil {
+		t.Errorf("Second Shutdown returned error: %v", err)
+	}
+}
+
+// Test Init creates parent directories
+func TestInit_CreatesParentDirectories(t *testing.T) {
+	tempDir := t.TempDir()
+	// Create a nested path that doesn't exist yet
+	logPath := filepath.Join(tempDir, "subdir1", "subdir2", "test.log")
+
+	originalLogger := slog.Default()
+	t.Cleanup(func() {
+		slog.SetDefault(originalLogger)
+		Shutdown()
+	})
+
+	err := Init(slog.LevelWarn, logPath)
+	if err != nil {
+		t.Fatalf("Init failed: %v", err)
+	}
+
+	// Verify log file was created
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		t.Errorf("Log file was not created at %s", logPath)
+	}
+
+	// Verify parent directories were created
+	parentDir := filepath.Dir(logPath)
+	if _, err := os.Stat(parentDir); os.IsNotExist(err) {
+		t.Errorf("Parent directory was not created at %s", parentDir)
+	}
+}
+
+// Test file permissions are 0600
+func TestInit_FilePermissions(t *testing.T) {
+	tempDir := t.TempDir()
+	logPath := filepath.Join(tempDir, "test.log")
+
+	originalLogger := slog.Default()
+	t.Cleanup(func() {
+		slog.SetDefault(originalLogger)
+		Shutdown()
+	})
+
+	err := Init(slog.LevelWarn, logPath)
+	if err != nil {
+		t.Fatalf("Init failed: %v", err)
+	}
+
+	// Check file permissions
+	info, err := os.Stat(logPath)
+	if err != nil {
+		t.Fatalf("Failed to stat log file: %v", err)
+	}
+
+	// File should have 0600 permissions (owner read/write only)
+	expectedPerms := os.FileMode(0600)
+	actualPerms := info.Mode().Perm()
+	if actualPerms != expectedPerms {
+		t.Errorf("File permissions = %v, want %v", actualPerms, expectedPerms)
+	}
+}
+
+// Test that calling Init twice closes the previous log file
+func TestInit_ClosesExistingLogFile(t *testing.T) {
+	tempDir := t.TempDir()
+	logPath1 := filepath.Join(tempDir, "test1.log")
+	logPath2 := filepath.Join(tempDir, "test2.log")
+
+	originalLogger := slog.Default()
+	t.Cleanup(func() {
+		slog.SetDefault(originalLogger)
+		Shutdown()
+	})
+
+	// Initialize first logger
+	err := Init(slog.LevelWarn, logPath1)
+	if err != nil {
+		t.Fatalf("First Init failed: %v", err)
+	}
+
+	slog.Warn("message to first log")
+
+	// Initialize second logger (should close first file)
+	err = Init(slog.LevelWarn, logPath2)
+	if err != nil {
+		t.Fatalf("Second Init failed: %v", err)
+	}
+
+	slog.Warn("message to second log")
+
+	// Both files should exist
+	if _, err := os.Stat(logPath1); os.IsNotExist(err) {
+		t.Errorf("First log file was not created")
+	}
+	if _, err := os.Stat(logPath2); os.IsNotExist(err) {
+		t.Errorf("Second log file was not created")
+	}
+
+	// Second log should contain the second message
+	content2, err := os.ReadFile(logPath2)
+	if err != nil {
+		t.Fatalf("Failed to read second log file: %v", err)
+	}
+	if !strings.Contains(string(content2), "message to second log") {
+		t.Errorf("Second log file does not contain expected message")
 	}
 }

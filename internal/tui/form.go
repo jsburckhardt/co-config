@@ -66,20 +66,27 @@ func BuildForm(cfg *config.Config, schema []copilot.SchemaField) (*huh.Form, *Fo
 	for _, sf := range schema {
 		schemaNames[sf.Name] = true
 	}
+	// Collect undocumented keys and sort them for stable ordering
+	var undocumentedKeys []string
 	for _, key := range cfg.Keys() {
 		if !schemaNames[key] && !sensitive.IsSensitive(key) {
-			val := cfg.Get(key)
-			if strVal, ok := val.(string); ok {
-				// Store a pointer to a new string variable
-				ptr := new(string)
-				*ptr = strVal
-				result.Values[key] = ptr
-				input := huh.NewInput().
-					Title(key).
-					Value(ptr).
-					Description("(undocumented)")
-				generalFields = append(generalFields, input)
-			}
+			undocumentedKeys = append(undocumentedKeys, key)
+		}
+	}
+	sort.Strings(undocumentedKeys)
+	
+	for _, key := range undocumentedKeys {
+		val := cfg.Get(key)
+		if strVal, ok := val.(string); ok {
+			// Store a pointer to a new string variable
+			ptr := new(string)
+			*ptr = strVal
+			result.Values[key] = ptr
+			input := huh.NewInput().
+				Title(key).
+				Value(ptr).
+				Description("(undocumented)")
+			generalFields = append(generalFields, input)
 		}
 	}
 
