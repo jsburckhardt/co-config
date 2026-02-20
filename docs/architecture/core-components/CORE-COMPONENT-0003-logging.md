@@ -10,13 +10,13 @@ Provide structured, leveled logging for debugging and diagnostics without pollut
 
 ## Scope
 
-All packages in the `ccc` application. Logging output must not interfere with bubbletea's terminal rendering.
+All packages in the `ccc` application. Logging output must not interfere with Bubbletea's terminal rendering.
 
 ## Definition
 
 ### Rules
-- Use Go's `log/slog` package (standard library, structured logging, available since Go 1.21)
-- Log output goes to a file (`~/.copilot/ccc.log`), never to stdout/stderr (bubbletea owns the terminal)
+- Use Go's `log/slog` package from the standard library for structured logging
+- Log output goes to a file (`~/.copilot/ccc.log`), never to stdout/stderr (Bubbletea owns the terminal)
 - Default log level is `warn`; configurable via `--log-level` flag or `CCC_LOG_LEVEL` environment variable
 - Log entries must include structured fields (key-value pairs), not interpolated strings
 - Never log sensitive data (tokens, credentials) — even at debug level
@@ -33,7 +33,7 @@ All packages in the `ccc` application. Logging output must not interfere with bu
 
 ## Rationale
 
-`log/slog` is the standard structured logging package in Go since 1.21. It avoids external dependencies, integrates naturally with Go idioms, and supports JSON output for machine parsing. File-based logging is required because bubbletea controls the terminal.
+`log/slog` is the standard structured logging package in Go. It avoids external dependencies, integrates naturally with Go idioms, and supports JSON output for machine parsing. File-based logging is required because Bubbletea controls the terminal.
 
 ## Usage Examples
 
