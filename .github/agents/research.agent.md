@@ -12,6 +12,8 @@ tools:
   - web/fetch
   - web/githubRepo
   - todo
+  - exa/*
+  - perplexity/*
 user-invocable: true
 disable-model-invocation: false
 target: vscode
@@ -33,6 +35,8 @@ You MUST produce the research brief at docs/workitems/<WI-ID>/research/00-resear
 You MUST follow the Research Brief template defined in Section 5.1 of the specification.
 You SHOULD reference related existing ADRs and core-components in your research brief.
 You SHOULD identify risks, open questions, and unknowns in the research brief.
+You SHOULD use exa MCP tools to search for relevant external documentation, articles, and code examples.
+You SHOULD use perplexity MCP tools to answer complex research questions and gather synthesized information.
 You MAY consult external documentation or APIs for additional context.
 </instructions>
 
