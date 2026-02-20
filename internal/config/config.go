@@ -44,11 +44,15 @@ func (c *Config) Data() map[string]any {
 
 // DefaultPath returns the default config file path.
 // Checks XDG_CONFIG_HOME first, then falls back to ~/.copilot/config.json.
+// If home directory cannot be determined, uses temp directory as fallback.
 func DefaultPath() string {
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
 		return filepath.Join(xdg, "copilot", "config.json")
 	}
-	home, _ := os.UserHomeDir()
+	home, err := os.UserHomeDir()
+	if err != nil || home == "" {
+		return filepath.Join(os.TempDir(), "copilot", "config.json")
+	}
 	return filepath.Join(home, ".copilot", "config.json")
 }
 

@@ -367,3 +367,16 @@ func TestSaveConfig_CreatesDirectory(t *testing.T) {
 		t.Error("config directory was not created")
 	}
 }
+
+// Test: DefaultPath returns a non-empty absolute path
+func TestDefaultPath_ReturnsAbsolutePath(t *testing.T) {
+	path := DefaultPath()
+	
+	if path == "" {
+		t.Error("DefaultPath() returned empty string")
+	}
+	
+	if !filepath.IsAbs(path) {
+		t.Errorf("DefaultPath() = %q is not an absolute path", path)
+	}
+}
