@@ -32,3 +32,5 @@ Short, actionable statements derived from ADRs and core-components. More than on
 | 7 | Preserve unknown config fields on round-trip (no data loss) | CC-0004 | 2026-02-20 |
 | 8 | Mask sensitive fields with truncated SHA-256 hash; make them read-only | CC-0005 | 2026-02-20 |
 | 9 | Never log sensitive data (tokens, credentials) at any level | CC-0005 | 2026-02-20 |
+| 10 | Use Cobra for CLI argument parsing and subcommands | ADR-0002 | 2026-02-20 |
+| 11 | Use Viper for configuration file binding and env var support | ADR-0002 | 2026-02-20 |

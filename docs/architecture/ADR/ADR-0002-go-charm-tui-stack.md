@@ -15,6 +15,8 @@ We will use **Go** as the implementation language with the **Charm** ecosystem f
 - **[Bubbletea](https://github.com/charmbracelet/bubbletea)** — Elm-architecture TUI framework for the application shell
 - **[Lipgloss](https://github.com/charmbracelet/lipgloss)** — Terminal styling and layout
 - **[Huh](https://github.com/charmbracelet/huh)** — Form components (toggles, selects, text inputs) for config editing
+- **[Cobra](https://github.com/spf13/cobra)** — CLI argument parsing, subcommands, and help generation
+- **[Viper](https://github.com/spf13/viper)** — Configuration file binding and environment variable support
 - **go modules** — Dependency management
 - **go test** — Testing
 
@@ -27,6 +29,8 @@ The binary will be named `ccc` (Copilot Config CLI).
 | Python + Textual | Rich widget library, rapid prototyping | Requires Python runtime, slower startup, packaging complexity | Go produces a single static binary — simpler distribution |
 | Rust + Ratatui | High performance, strong type safety | Steeper learning curve, slower iteration, not in devcontainer | Go already available, Charm ecosystem is more mature for forms |
 | Go + tview | Stable, widget-based | Less composable, dated look, no built-in form library | Charm stack is more modern and produces better-looking UIs |
+| No framework (`flag` package) | Zero dependencies, simple | No subcommands, no auto-help, manual config binding | Too limited for a tool that may grow subcommands |
+| urfave/cli | Popular, lightweight | Less ecosystem integration than Cobra | Cobra is the de facto standard in Go CLI |
 
 ## Consequences
 
@@ -35,6 +39,8 @@ The binary will be named `ccc` (Copilot Config CLI).
 - Charm ecosystem is the most popular Go TUI stack with excellent documentation
 - Huh provides ready-made form components that match our config-editing use case perfectly
 - Fast startup time ideal for a CLI tool
+- Cobra provides automatic help/usage generation and subcommand support for future extensibility
+- Viper enables seamless config file + env var + flag binding
 
 ### Negative
 - Elm architecture has a learning curve for contributors unfamiliar with it
@@ -53,3 +59,5 @@ The binary will be named `ccc` (Copilot Config CLI).
 - [Lipgloss](https://github.com/charmbracelet/lipgloss)
 - [Huh](https://github.com/charmbracelet/huh)
 - [Charm ecosystem](https://charm.sh/)
+- [Cobra](https://github.com/spf13/cobra)
+- [Viper](https://github.com/spf13/viper)
