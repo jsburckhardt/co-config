@@ -86,9 +86,9 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	slog.Info("loaded config", "path", configPath, "keys", len(cfg.Keys()))
 
-	// Build and run TUI
+	// Build and run TUI with alt-screen mode
 	model := tui.NewModel(cfg, schema, copilotVersion, configPath)
-	p := tea.NewProgram(model)
+	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("running TUI: %w", err)
 	}

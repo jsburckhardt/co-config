@@ -7,6 +7,7 @@ This file is the single registry of all architectural decisions and core-compone
 | ID | Title | Status | Date |
 |----|-------|--------|------|
 | ADR-0002 | [Go with Charm TUI Stack](ADR-0002-go-charm-tui-stack.md) | Accepted | 2026-02-20 |
+| ADR-0003 | [Two-Panel TUI Layout Pattern](ADR-0003-two-panel-tui-layout.md) | Accepted | 2026-02-20 |
 
 ## Core-Components
 
@@ -34,3 +35,8 @@ Short, actionable statements derived from ADRs and core-components. More than on
 | 9 | Never log sensitive data (tokens, credentials) at any level | CC-0005 | 2026-02-20 |
 | 10 | Use Cobra for CLI argument parsing and subcommands | ADR-0002 | 2026-02-20 |
 | 11 | Use Viper for configuration file binding and env var support | ADR-0002 | 2026-02-20 |
+| 12 | Replace Huh forms with custom Bubbletea + Bubbles two-panel layout | ADR-0003 | 2026-02-20 |
+| 13 | Use `bubbles/list` for left panel config option navigation | ADR-0003 | 2026-02-20 |
+| 14 | Use `bubbles/textinput` and `bubbles/textarea` for right panel editing | ADR-0003 | 2026-02-20 |
+| 15 | Enable fullscreen mode via `tea.WithAltScreen()` for immersive UX | ADR-0003 | 2026-02-20 |
+| 16 | Frame the entire TUI with Lipgloss borders and branded header | ADR-0003 | 2026-02-20 |
