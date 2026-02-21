@@ -1,6 +1,9 @@
 # Agents — Soft Factory Pipeline Specification
 
+## ⛔ NEVER COMMIT DIRECTLY TO MAIN — ALWAYS USE A FEATURE BRANCH ⛔
+
 <instructions>
+You MUST NEVER commit directly to the main or master branch. ALL work MUST go through a feature branch and a pull request.
 Every piece of work MUST flow through exactly five stages in order: Research, Architect, Plan, Implement, Ship.
 You MUST classify scope_type as exactly one of: workitem, architecture_decision, core_component.
 You MUST NOT create an architectural decision outside of an ADR document.

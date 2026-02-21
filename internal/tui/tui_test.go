@@ -1,282 +1,349 @@
 package tui
 
 import (
-	"testing"
+"testing"
 
-	"github.com/jsburckhardt/co-config/internal/config"
-	"github.com/jsburckhardt/co-config/internal/copilot"
+tea "github.com/charmbracelet/bubbletea"
+"github.com/jsburckhardt/co-config/internal/config"
+"github.com/jsburckhardt/co-config/internal/copilot"
 )
 
-// UT-TUI-001: BuildForm with a bool schema field creates a form (non-nil)
-func TestBuildFormWithBoolField(t *testing.T) {
-	cfg := config.NewConfig()
-	cfg.Set("test_bool", true)
-
-	schema := []copilot.SchemaField{
-		{
-			Name:        "test_bool",
-			Type:        "bool",
-			Default:     "false",
-			Description: "A test boolean field",
-		},
-	}
-
-	form, result := BuildForm(cfg, schema)
-
-	if form == nil {
-		t.Fatal("BuildForm returned nil form")
-	}
-	if result == nil {
-		t.Fatal("BuildForm returned nil result")
-	}
-	if result.Values == nil {
-		t.Fatal("FormResult.Values is nil")
-	}
-	if _, ok := result.Values["test_bool"]; !ok {
-		t.Error("Expected test_bool in result.Values")
-	}
-}
-
-// UT-TUI-002: BuildForm with an enum schema field creates form with options
-func TestBuildFormWithEnumField(t *testing.T) {
-	cfg := config.NewConfig()
-	cfg.Set("test_enum", "option2")
-
-	schema := []copilot.SchemaField{
-		{
-			Name:        "test_enum",
-			Type:        "enum",
-			Default:     "option1",
-			Options:     []string{"option1", "option2", "option3"},
-			Description: "A test enum field",
-		},
-	}
-
-	form, result := BuildForm(cfg, schema)
-
-	if form == nil {
-		t.Fatal("BuildForm returned nil form")
-	}
-	if result == nil {
-		t.Fatal("BuildForm returned nil result")
-	}
-	if _, ok := result.Values["test_enum"]; !ok {
-		t.Error("Expected test_enum in result.Values")
-	}
-}
-
-// UT-TUI-003: BuildForm with sensitive field excludes it from editable fields
-func TestBuildFormExcludesSensitiveField(t *testing.T) {
-	cfg := config.NewConfig()
-	cfg.Set("copilot_tokens", map[string]any{"token": "secret"})
-	cfg.Set("model", "gpt-4")
-
-	schema := []copilot.SchemaField{
-		{
-			Name:        "copilot_tokens",
-			Type:        "string",
-			Default:     "",
-			Description: "Copilot authentication tokens",
-		},
-		{
-			Name:        "model",
-			Type:        "enum",
-			Default:     "gpt-4",
-			Options:     []string{"gpt-4", "gpt-3.5-turbo"},
-			Description: "AI model to use",
-		},
-	}
-
-	form, result := BuildForm(cfg, schema)
-
-	if form == nil {
-		t.Fatal("BuildForm returned nil form")
-	}
-
-	// Sensitive field should not be in editable Values (only in notes)
-	if _, ok := result.Values["copilot_tokens"]; ok {
-		t.Error("Expected copilot_tokens to be excluded from editable Values")
-	}
-
-	// Non-sensitive field should be present
-	if _, ok := result.Values["model"]; !ok {
-		t.Error("Expected model in result.Values")
-	}
-}
-
-// UT-TUI-004: NewModel creates a valid model with Init()
+// UT-TUI-001: NewModel creates a valid model with two-panel layout
 func TestNewModel(t *testing.T) {
-	cfg := config.NewConfig()
-	cfg.Set("model", "gpt-4")
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
 
-	schema := []copilot.SchemaField{
-		{
-			Name:        "model",
-			Type:        "enum",
-			Default:     "gpt-4",
-			Options:     []string{"gpt-4", "gpt-3.5-turbo"},
-			Description: "AI model to use",
-		},
-	}
-
-	model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
-
-	if model.form == nil {
-		t.Fatal("NewModel created model with nil form")
-	}
-	if model.result == nil {
-		t.Fatal("NewModel created model with nil result")
-	}
-	if model.cfg != cfg {
-		t.Error("NewModel did not store config correctly")
-	}
-	if model.version != "0.0.412" {
-		t.Error("NewModel did not store version correctly")
-	}
-	if model.configPath != "/tmp/config.json" {
-		t.Error("NewModel did not store configPath correctly")
-	}
-
-	// Test Init() returns a command
-	cmd := model.Init()
-	if cmd == nil {
-		t.Error("Model.Init() returned nil command")
-	}
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}, Description: "AI model"},
 }
 
-// Test list field handling
-func TestBuildFormWithListField(t *testing.T) {
-	cfg := config.NewConfig()
-	cfg.Set("allowed_urls", []any{"https://example.com", "https://test.com"})
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
 
-	schema := []copilot.SchemaField{
-		{
-			Name:        "allowed_urls",
-			Type:        "list",
-			Default:     "",
-			Description: "List of allowed URLs",
-		},
-	}
-
-	form, result := BuildForm(cfg, schema)
-
-	if form == nil {
-		t.Fatal("BuildForm returned nil form")
-	}
-	if _, ok := result.Values["allowed_urls"]; !ok {
-		t.Error("Expected allowed_urls in result.Values")
-	}
-
-	// Check that the value is a pointer to string (multi-line text)
-	if ptr, ok := result.Values["allowed_urls"].(*string); ok {
-		expected := "https://example.com\nhttps://test.com"
-		if *ptr != expected {
-			t.Errorf("Expected list to be joined as %q, got %q", expected, *ptr)
-		}
-	} else {
-		t.Error("Expected allowed_urls value to be *string")
-	}
+if model.cfg != cfg {
+t.Error("NewModel did not store config correctly")
+}
+if model.version != "0.0.412" {
+t.Error("NewModel did not store version correctly")
+}
+if model.configPath != "/tmp/config.json" {
+t.Error("NewModel did not store configPath correctly")
+}
+if model.state != StateBrowsing {
+t.Error("NewModel should start in Browsing state")
+}
 }
 
-// Test string field handling
-func TestBuildFormWithStringField(t *testing.T) {
-	cfg := config.NewConfig()
-	cfg.Set("log_level", "debug")
-
-	schema := []copilot.SchemaField{
-		{
-			Name:        "log_level",
-			Type:        "string",
-			Default:     "default",
-			Description: "Log level",
-		},
-	}
-
-	form, result := BuildForm(cfg, schema)
-
-	if form == nil {
-		t.Fatal("BuildForm returned nil form")
-	}
-	if _, ok := result.Values["log_level"]; !ok {
-		t.Error("Expected log_level in result.Values")
-	}
-
-	if ptr, ok := result.Values["log_level"].(*string); ok {
-		if *ptr != "debug" {
-			t.Errorf("Expected log_level to be 'debug', got %q", *ptr)
-		}
-	} else {
-		t.Error("Expected log_level value to be *string")
-	}
+// UT-TUI-002: State machine initialization starts in Browsing state
+func TestStateMachineInitialization(t *testing.T) {
+cfg := config.NewConfig()
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 }
 
-// Test field categorization
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+
+if model.state != StateBrowsing {
+t.Errorf("Expected initial state Browsing, got %v", model.state)
+}
+}
+
+// UT-TUI-003: List population from schema with all field types
+func TestListPopulation(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("test_string", "value")
+cfg.Set("test_bool", true)
+cfg.Set("test_enum", "option1")
+cfg.Set("test_list", []any{"item1", "item2"})
+
+schema := []copilot.SchemaField{
+{Name: "test_string", Type: "string", Default: "", Description: "String field"},
+{Name: "test_bool", Type: "bool", Default: "false", Description: "Bool field"},
+{Name: "test_enum", Type: "enum", Default: "option1", Options: []string{"option1", "option2"}},
+{Name: "test_list", Type: "list", Default: "", Description: "List field"},
+}
+
+entries := buildEntries(cfg, schema)
+
+configItemCount := 0
+for _, e := range entries {
+if !e.isHeader {
+configItemCount++
+}
+}
+
+if configItemCount != 4 {
+t.Errorf("Expected 4 config items, got %d", configItemCount)
+}
+}
+
+// UT-TUI-004: Sensitive fields are categorized under Sensitive group
+func TestSensitiveFieldsInList(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("copilot_tokens", map[string]any{"token": "secret"})
+cfg.Set("model", "gpt-4")
+
+schema := []copilot.SchemaField{
+{Name: "copilot_tokens", Type: "string", Default: "", Description: "Tokens"},
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}, Description: "Model"},
+}
+
+entries := buildEntries(cfg, schema)
+
+var foundSensitive, foundModel bool
+for _, e := range entries {
+if !e.isHeader {
+if e.item.Field.Name == "copilot_tokens" {
+foundSensitive = true
+}
+if e.item.Field.Name == "model" {
+foundModel = true
+}
+}
+}
+
+if !foundSensitive {
+t.Error("Sensitive field not found in entries")
+}
+if !foundModel {
+t.Error("Model field not found in entries")
+}
+}
+
+// UT-TUI-005: Alt-screen compatibility
+func TestAltScreenCompatibility(t *testing.T) {
+cfg := config.NewConfig()
+model := NewModel(cfg, []copilot.SchemaField{}, "0.0.412", "/tmp/config.json")
+
+cmd := model.Init()
+if cmd != nil {
+t.Error("Init() should return nil")
+}
+}
+
+// UT-TUI-006: Window resize updates panel sizes
+func TestWindowResize(t *testing.T) {
+cfg := config.NewConfig()
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+}
+
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+
+msg := tea.WindowSizeMsg{Width: 120, Height: 40}
+newModel, _ := model.Update(msg)
+
+m := newModel.(*Model)
+if m.windowWidth != 120 {
+t.Errorf("Expected windowWidth 120, got %d", m.windowWidth)
+}
+if m.windowHeight != 40 {
+t.Errorf("Expected windowHeight 40, got %d", m.windowHeight)
+}
+}
+
+// UT-TUI-007: State transition from Browsing to Editing
+func TestBrowsingToEditingTransition(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+}
+
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+// Cursor starts on first ConfigItem (skips GroupHeader)
+if item := model.listPanel.SelectedItem(); item == nil {
+t.Fatal("No item selected initially")
+}
+
+msg := tea.KeyMsg{Type: tea.KeyEnter}
+newModel, _ := model.Update(msg)
+
+m := newModel.(*Model)
+if m.state != StateEditing {
+t.Errorf("Expected Editing state after Enter, got %v", m.state)
+}
+}
+
+// UT-TUI-008: State transition from Editing to Browsing
+func TestEditingToBrowsingTransition(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+}
+
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+model.state = StateEditing
+
+msg := tea.KeyMsg{Type: tea.KeyEsc}
+newModel, _ := model.Update(msg)
+
+m := newModel.(*Model)
+if m.state != StateBrowsing {
+t.Errorf("Expected Browsing state after Esc, got %v", m.state)
+}
+}
+
+// UT-TUI-009: Token-like values are treated as sensitive
+func TestTokenLikeValueTreatedAsSensitive(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("custom_field", "ghp_abc123secrettoken")
+
+schema := []copilot.SchemaField{
+{Name: "custom_field", Type: "string", Default: "", Description: "Custom field"},
+}
+
+entries := buildEntries(cfg, schema)
+
+// Should be in Sensitive category
+var inSensitive bool
+var sawSensitiveHeader bool
+for _, e := range entries {
+if e.isHeader && e.header == "Sensitive" {
+sawSensitiveHeader = true
+}
+if sawSensitiveHeader && !e.isHeader && e.item.Field.Name == "custom_field" {
+inSensitive = true
+break
+}
+}
+
+if !inSensitive {
+t.Error("Token-like value field should be in Sensitive category")
+}
+}
+
+// UT-TUI-010: Field categorization logic
 func TestFieldCategorization(t *testing.T) {
-	cfg := config.NewConfig()
+cfg := config.NewConfig()
 
-	schema := []copilot.SchemaField{
-		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-		{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark", "light"}},
-		{Name: "allowed_urls", Type: "list"},
-		{Name: "beep", Type: "bool", Default: "true"},
-	}
-
-	form, _ := BuildForm(cfg, schema)
-
-	if form == nil {
-		t.Fatal("BuildForm returned nil form")
-	}
-
-	// This test mainly verifies that BuildForm doesn't panic
-	// when categorizing different field types
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark", "light"}},
+{Name: "allowed_urls", Type: "list"},
 }
 
-// Test that token-like values are treated as sensitive
-func TestBuildFormTokenValueTreatedAsSensitive(t *testing.T) {
-	cfg := config.NewConfig()
-	cfg.Set("custom_field", "ghp_abc123secrettoken")
+entries := buildEntries(cfg, schema)
 
-	schema := []copilot.SchemaField{
-		{Name: "custom_field", Type: "string", Default: "", Description: "A custom field"},
-	}
-
-	_, result := BuildForm(cfg, schema)
-
-	// Token-like value should NOT be in editable Values
-	if _, ok := result.Values["custom_field"]; ok {
-		t.Error("Expected token-like value field to be excluded from editable Values")
-	}
+headerCount := 0
+for _, e := range entries {
+if e.isHeader {
+headerCount++
+}
 }
 
-// Test undocumented keys are sorted alphabetically
-func TestUndocumentedKeysSorted(t *testing.T) {
-	cfg := config.NewConfig()
-	// Add undocumented keys in non-alphabetical order
-	cfg.Set("zebra_key", "value_z")
-	cfg.Set("apple_key", "value_a")
-	cfg.Set("middle_key", "value_m")
-	cfg.Set("banana_key", "value_b")
+if headerCount < 2 {
+t.Errorf("Expected at least 2 group headers, got %d", headerCount)
+}
+}
 
-	schema := []copilot.SchemaField{
-		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-	}
+// UT-TUI-011: DetailPanel renders field information
+func TestDetailPanelRender(t *testing.T) {
+detail := NewDetailPanel()
+detail.SetSize(50, 20)
 
-	form, result := BuildForm(cfg, schema)
+field := copilot.SchemaField{
+Name:        "model",
+Type:        "enum",
+Default:     "gpt-4",
+Options:     []string{"gpt-4", "gpt-3.5-turbo"},
+Description: "AI model to use",
+}
 
-	if form == nil {
-		t.Fatal("BuildForm returned nil form")
-	}
+detail.SetField(field, "gpt-4")
 
-	// Undocumented keys should NOT be in editable result.Values (they're read-only)
-	undocKeys := []string{"apple_key", "banana_key", "middle_key", "zebra_key"}
-	for _, key := range undocKeys {
-		if _, ok := result.Values[key]; ok {
-			t.Errorf("Undocumented key %q should not be in editable result.Values", key)
-		}
-	}
+view := detail.View()
+if view == "" {
+t.Error("DetailPanel.View() returned empty string")
+}
+}
 
-	// model should still be in result.Values
-	if _, ok := result.Values["model"]; !ok {
-		t.Error("Expected model in result.Values")
-	}
+// UT-TUI-012: formatValueCompact handles different value types
+func TestFormatValueCompact(t *testing.T) {
+tests := []struct {
+name   string
+value  any
+maxLen int
+want   string
+}{
+{"string", "test", 10, "test"},
+{"bool true", true, 10, "true"},
+{"bool false", false, 10, "false"},
+{"empty list", []any{}, 10, "(empty)"},
+{"list", []any{"a", "b"}, 20, "(2 items)"},
+{"truncated", "very long string that exceeds max length", 10, "very lo..."},
+{"nil", nil, 10, "(not set)"},
+}
+
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+got := formatValueCompact(tt.value, tt.maxLen)
+if got != tt.want {
+t.Errorf("formatValueCompact(%v, %d) = %q, want %q", tt.value, tt.maxLen, got, tt.want)
+}
+})
+}
+}
+
+// UT-TUI-013: ListPanel skips group headers during navigation
+func TestListPanelSkipsHeaders(t *testing.T) {
+entries := []listEntry{
+{isHeader: true, header: "Group A"},
+{item: ConfigItem{Field: copilot.SchemaField{Name: "field1"}}},
+{item: ConfigItem{Field: copilot.SchemaField{Name: "field2"}}},
+{isHeader: true, header: "Group B"},
+{item: ConfigItem{Field: copilot.SchemaField{Name: "field3"}}},
+}
+
+lp := NewListPanel(entries)
+
+// Should start on field1
+if item := lp.SelectedItem(); item == nil || item.Field.Name != "field1" {
+t.Fatalf("Expected cursor on field1, got %v", lp.SelectedItem())
+}
+
+lp.Down()
+if item := lp.SelectedItem(); item == nil || item.Field.Name != "field2" {
+t.Errorf("Expected cursor on field2 after Down, got %v", lp.SelectedItem())
+}
+
+// Down again should skip header and land on field3
+lp.Down()
+if item := lp.SelectedItem(); item == nil || item.Field.Name != "field3" {
+t.Errorf("Expected cursor on field3 after Down (skipping header), got %v", lp.SelectedItem())
+}
+
+// Up should skip header and land on field2
+lp.Up()
+if item := lp.SelectedItem(); item == nil || item.Field.Name != "field2" {
+t.Errorf("Expected cursor on field2 after Up (skipping header), got %v", lp.SelectedItem())
+}
+}
+
+// UT-TUI-014: View renders without panicking
+func TestViewRenders(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+cfg.Set("theme", "dark")
+
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark"}},
+}
+
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+view := model.View()
+if view == "" {
+t.Error("View() returned empty string")
+}
 }
