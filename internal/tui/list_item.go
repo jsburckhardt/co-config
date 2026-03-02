@@ -156,7 +156,7 @@ valWidth := l.width - nameWidth - 4
 if valWidth < 3 {
 valWidth = 3
 }
-val = formatValueCompact(item.Value, valWidth)
+val = formatValueCompact(item.Value, item.Field.Default, valWidth)
 }
 
 line := fmt.Sprintf("%-*s %s", nameWidth, name, val)
@@ -173,7 +173,7 @@ return sensitiveItemStyle.Render("  " + line)
 return itemStyle.Render("  " + line)
 }
 
-func formatValueCompact(val any, maxLen int) string {
+func formatValueCompact(val any, defaultVal string, maxLen int) string {
 if maxLen < 3 {
 maxLen = 3
 }
@@ -196,7 +196,11 @@ s = fmt.Sprintf("(%d items)", len(v))
 case map[string]any:
 s = fmt.Sprintf("{%d keys}", len(v))
 case nil:
+if defaultVal != "" {
+s = defaultVal + " (default)"
+} else {
 s = "(not set)"
+}
 default:
 s = fmt.Sprintf("%v", v)
 }

@@ -1,6 +1,7 @@
 package tui
 
 import (
+"strings"
 "testing"
 
 tea "github.com/charmbracelet/bubbletea"
@@ -267,25 +268,33 @@ t.Error("DetailPanel.View() returned empty string")
 // UT-TUI-012: formatValueCompact handles different value types
 func TestFormatValueCompact(t *testing.T) {
 tests := []struct {
-name   string
-value  any
-maxLen int
-want   string
+name       string
+value      any
+defaultVal string
+maxLen     int
+want       string
 }{
-{"string", "test", 10, "test"},
-{"bool true", true, 10, "true"},
-{"bool false", false, 10, "false"},
-{"empty list", []any{}, 10, "(empty)"},
-{"list", []any{"a", "b"}, 20, "(2 items)"},
-{"truncated", "very long string that exceeds max length", 10, "very lo..."},
-{"nil", nil, 10, "(not set)"},
+{"string", "test", "", 10, "test"},
+{"bool true", true, "", 10, "true"},
+{"bool false", false, "", 10, "false"},
+{"empty list", []any{}, "", 10, "(empty)"},
+{"list", []any{"a", "b"}, "", 20, "(2 items)"},
+{"truncated", "very long string that exceeds max length", "", 10, "very lo..."},
+{"nil", nil, "", 10, "(not set)"},
+// New test cases for default-value display (WI-0004)
+{"nil with default", nil, "auto", 20, "auto (default)"},
+{"nil with bool default", nil, "false", 20, "false (default)"},
+{"nil with long default truncated", nil, "very-long-default", 10, "very-lo..."},
+{"nil no default", nil, "", 10, "(not set)"},
+{"non-nil ignores default", "custom", "auto", 20, "custom"},
+{"bool false ignores default", false, "false", 20, "false"},
 }
 
 for _, tt := range tests {
 t.Run(tt.name, func(t *testing.T) {
-got := formatValueCompact(tt.value, tt.maxLen)
+got := formatValueCompact(tt.value, tt.defaultVal, tt.maxLen)
 if got != tt.want {
-t.Errorf("formatValueCompact(%v, %d) = %q, want %q", tt.value, tt.maxLen, got, tt.want)
+t.Errorf("formatValueCompact(%v, %q, %d) = %q, want %q", tt.value, tt.defaultVal, tt.maxLen, got, tt.want)
 }
 })
 }
@@ -326,7 +335,244 @@ t.Errorf("Expected cursor on field2 after Up (skipping header), got %v", lp.Sele
 }
 }
 
-// UT-TUI-014: View renders without panicking
+// UT-TUI-014: Copilot icon constant structure
+func TestCopilotIconConstant(t *testing.T) {
+lines := strings.Split(copilotIcon, "\n")
+if len(lines) != 4 {
+t.Errorf("copilotIcon should have 4 lines, got %d", len(lines))
+}
+for i, line := range lines {
+w := len([]rune(line))
+if w != 6 {
+t.Errorf("copilotIcon line %d width: got %d runes, want 6 (line=%q)", i, w, line)
+}
+}
+}
+
+// UT-TUI-015: View no longer contains gear emoji
+func TestViewNoGearEmoji(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+}
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+view := model.View()
+if strings.Contains(view, "⚙") {
+t.Error("View() should not contain the gear emoji after icon replacement")
+}
+}
+
+// UT-TUI-016: View renders with ASCII icon and title
+func TestViewRendersWithIcon(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+}
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+view := model.View()
+if !strings.Contains(view, "╭─╮╭─╮") {
+t.Error("View() should contain the first line of the copilot icon")
+}
+if !strings.Contains(view, "ccc") {
+t.Error("View() should contain the title text")
+}
+if !strings.Contains(view, "0.0.412") {
+t.Error("View() should contain the version string")
+}
+}
+
+// UT-TUI-017: View renders framed header with border characters
+func TestViewRendersFramedHeader(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+}
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+view := model.View()
+// outer frame + header frame + help bar frame + 2 panels = 5 top-left corners minimum
+topLeftCount := strings.Count(view, "╭")
+if topLeftCount < 5 {
+t.Errorf("Expected at least 5 top-left corners for framed sections, got %d", topLeftCount)
+}
+}
+
+// UT-TUI-018: View renders at 80x24 without panic
+func TestViewRendersAt80x24(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+cfg.Set("theme", "dark")
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark"}},
+}
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+model.windowWidth = 80
+model.windowHeight = 24
+model.updateSizes()
+
+view := model.View()
+if view == "" {
+t.Error("View() at 80x24 returned empty string")
+}
+}
+
+// UT-TUI-019: Panel height overhead arithmetic at various sizes
+func TestPanelHeightOverhead(t *testing.T) {
+tests := []struct {
+name          string
+width, height int
+}{
+{"80x24", 80, 24},
+{"120x40", 120, 40},
+{"100x30", 100, 30},
+}
+
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+cfg := config.NewConfig()
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+}
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+msg := tea.WindowSizeMsg{Width: tt.width, Height: tt.height}
+newModel, _ := model.Update(msg)
+m := newModel.(*Model)
+
+view := m.View()
+if view == "" {
+t.Errorf("View() at %dx%d returned empty string", tt.width, tt.height)
+}
+})
+}
+}
+
+// UT-TUI-020: Small terminal floor guard prevents panic
+func TestSmallTerminalFloor(t *testing.T) {
+tests := []struct {
+name          string
+width, height int
+}{
+{"40x15 - at floor", 40, 15},
+{"30x12 - below floor", 30, 12},
+{"20x10 - very small", 20, 10},
+}
+
+for _, tt := range tests {
+t.Run(tt.name, func(t *testing.T) {
+cfg := config.NewConfig()
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+}
+model := NewModel(cfg, schema, "0.0.412", "/tmp/config.json")
+msg := tea.WindowSizeMsg{Width: tt.width, Height: tt.height}
+newModel, _ := model.Update(msg)
+m := newModel.(*Model)
+
+view := m.View()
+if view == "" {
+t.Errorf("View() at %dx%d returned empty string", tt.width, tt.height)
+}
+})
+}
+}
+
+// UT-TUI-021: Detail panel shows default annotation for unset field with default
+func TestDetailPanelRenderUnsetWithDefault(t *testing.T) {
+	detail := NewDetailPanel()
+	detail.SetSize(50, 20)
+
+	field := copilot.SchemaField{
+		Name:    "theme",
+		Type:    "enum",
+		Default: "auto",
+		Options: []string{"auto", "dark", "light"},
+	}
+
+	detail.SetField(field, nil)
+	view := detail.View()
+
+	if !strings.Contains(view, "auto") {
+		t.Error("Expected detail panel to show default value 'auto' for unset field")
+	}
+	if !strings.Contains(view, "default") {
+		t.Error("Expected detail panel to show '(default)' annotation for unset field")
+	}
+}
+
+// UT-TUI-022: Detail panel shows "(not set)" for unset field without default
+func TestDetailPanelRenderUnsetNoDefault(t *testing.T) {
+	detail := NewDetailPanel()
+	detail.SetSize(50, 20)
+
+	field := copilot.SchemaField{
+		Name:    "model",
+		Type:    "enum",
+		Default: "",
+		Options: []string{"gpt-4", "claude-sonnet-4"},
+	}
+
+	detail.SetField(field, nil)
+	view := detail.View()
+
+	if !strings.Contains(view, "not set") {
+		t.Error("Expected detail panel to show '(not set)' for unset field without default")
+	}
+	if strings.Contains(view, "(default)") {
+		t.Error("Detail panel should NOT show '(default)' annotation when no default exists")
+	}
+}
+
+// UT-TUI-023: Detail panel shows set value without default annotation
+func TestDetailPanelRenderSetValueIgnoresDefault(t *testing.T) {
+	detail := NewDetailPanel()
+	detail.SetSize(50, 20)
+
+	field := copilot.SchemaField{
+		Name:    "theme",
+		Type:    "enum",
+		Default: "auto",
+		Options: []string{"auto", "dark", "light"},
+	}
+
+	detail.SetField(field, "dark")
+	view := detail.View()
+
+	if !strings.Contains(view, "dark") {
+		t.Error("Expected detail panel to show set value 'dark'")
+	}
+	if strings.Contains(view, "(default)") {
+		t.Error("Detail panel should NOT show '(default)' when value is explicitly set")
+	}
+}
+
+// UT-TUI-024: Detail panel with nil field does not panic
+func TestDetailPanelNilFieldNoPanic(t *testing.T) {
+	detail := NewDetailPanel()
+	detail.SetSize(50, 20)
+
+	// Do NOT call SetField — field is nil
+	view := detail.View()
+	if !strings.Contains(view, "Select a field") {
+		t.Error("Expected placeholder text when no field is selected")
+	}
+}
+
+// UT-TUI-025: View renders without panicking
 func TestViewRenders(t *testing.T) {
 cfg := config.NewConfig()
 cfg.Set("model", "gpt-4")
