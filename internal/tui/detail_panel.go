@@ -255,7 +255,10 @@ return b.String()
 }
 
 func (d *DetailPanel) renderCurrentValue() string {
-return detailValueStyle.Render(formatValueDetail(d.value))
+	if d.value == nil && d.field != nil && d.field.Default != "" {
+		return detailValueStyle.Render(d.field.Default + " (default)")
+	}
+	return detailValueStyle.Render(formatValueDetail(d.value))
 }
 
 func (d *DetailPanel) renderEditWidget() string {

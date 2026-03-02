@@ -228,8 +228,8 @@ func (m *Model) updateSizes() {
 innerWidth := m.windowWidth - 2
 innerHeight := m.windowHeight - 2
 
-// Header(2) + blank(1) + help(1) = 4 lines overhead
-panelHeight := innerHeight - 4
+// framedHeader(6) + blank(1) + framedHelpBar(3) = 10 lines overhead
+panelHeight := innerHeight - 10
 if panelHeight < 3 {
 panelHeight = 3
 }
@@ -266,18 +266,19 @@ return "Loading..."
 
 innerWidth := m.windowWidth - 2
 innerHeight := m.windowHeight - 2
-panelHeight := innerHeight - 4
+panelHeight := innerHeight - 10
 if panelHeight < 3 {
 panelHeight = 3
 }
 leftWidth := int(float64(innerWidth) * 0.40)
 rightWidth := innerWidth - leftWidth - 1
 
-// Header: two lines
-title := headerStyle.Render("⚙  ccc — Copilot Config CLI")
+// Header: icon (4 lines) + title block, joined horizontally
+iconBlock := lipgloss.NewStyle().Foreground(primaryColor).Render(copilotIcon)
+title := headerStyle.Render("ccc — Copilot Config CLI")
 version := ""
 if m.version != "" {
-version = versionStyle.Render("   Copilot CLI v" + m.version)
+version = versionStyle.Render("Copilot CLI v" + m.version)
 }
 if m.saved {
 version += "  " + savedStyle.Render("✓ Saved")
@@ -285,7 +286,8 @@ version += "  " + savedStyle.Render("✓ Saved")
 if m.err != nil {
 version += "  " + errorStyle.Render("✗ "+m.err.Error())
 }
-header := title + "\n" + version
+titleBlock := lipgloss.JoinVertical(lipgloss.Left, title, version)
+headerContent := lipgloss.JoinHorizontal(lipgloss.Center, iconBlock, "  ", titleBlock)
 
 // Panels
 listContent := m.listPanel.View()
@@ -321,7 +323,9 @@ parts = append(parts, h.Key+" "+h.Desc)
 helpBar := helpStyle.Render(strings.Join(parts, "  •  "))
 
 // Assemble inner content
-inner := lipgloss.JoinVertical(lipgloss.Left, header, "", panels, helpBar)
+framedHeader := headerFrameStyle.Width(innerWidth - 2).Render(headerContent)
+framedHelpBar := helpBarFrameStyle.Width(innerWidth - 2).Render(helpBar)
+inner := lipgloss.JoinVertical(lipgloss.Left, framedHeader, "", panels, framedHelpBar)
 
 // Outer frame
 return outerFrameStyle.

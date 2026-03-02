@@ -14,6 +14,16 @@ outerFrameStyle = lipgloss.NewStyle().
 Border(lipgloss.RoundedBorder()).
 BorderForeground(borderColor)
 
+headerFrameStyle = lipgloss.NewStyle().
+Border(lipgloss.RoundedBorder()).
+BorderForeground(borderColor).
+Padding(0, 1)
+
+helpBarFrameStyle = lipgloss.NewStyle().
+Border(lipgloss.RoundedBorder()).
+BorderForeground(borderColor).
+Padding(0, 1)
+
 headerStyle = lipgloss.NewStyle().
 Bold(true).
 Foreground(primaryColor)
@@ -85,3 +95,5 @@ errorStyle          = lipgloss.NewStyle().Foreground(errorColor).Bold(true)
 
 helpStyle = lipgloss.NewStyle().Foreground(mutedColor)
 )
+
+const copilotIcon = "╭─╮╭─╮\n╰─╯╰─╯\n█ ▘▝ █\n ▔▔▔▔ "
