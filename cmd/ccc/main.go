@@ -73,6 +73,14 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	slog.Info("detected config schema", "fields", len(schema))
 
+	// Detect environment variables
+	envVars, err := copilot.DetectEnvVars()
+	if err != nil {
+		slog.Warn("failed to detect environment variables, using empty list", "error", err)
+		envVars = []copilot.EnvVarInfo{}
+	}
+	slog.Info("detected environment variables", "count", len(envVars))
+
 	// Load config
 	configPath := config.DefaultPath()
 	cfg, err := config.LoadConfig(configPath)
@@ -87,7 +95,7 @@ func run(cmd *cobra.Command, args []string) error {
 	slog.Info("loaded config", "path", configPath, "keys", len(cfg.Keys()))
 
 	// Build and run TUI with alt-screen mode
-	model := tui.NewModel(cfg, schema, copilotVersion, configPath)
+	model := tui.NewModel(cfg, schema, envVars, copilotVersion, configPath)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("running TUI: %w", err)

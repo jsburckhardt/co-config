@@ -17,12 +17,14 @@ tea "github.com/charmbracelet/bubbletea"
 type Model struct {
 cfg          *config.Config
 schema       []copilot.SchemaField
+envVars      []copilot.EnvVarInfo
 version      string
 configPath   string
 
 state        State
 listPanel    *ListPanel
 detailPanel  DetailPanel
+envPanel     *EnvVarsPanel
 keys         KeyMap
 
 windowWidth  int
@@ -32,10 +34,11 @@ saved        bool
 }
 
 // NewModel creates a new TUI model with two-panel layout.
-func NewModel(cfg *config.Config, schema []copilot.SchemaField, version, configPath string) *Model {
+func NewModel(cfg *config.Config, schema []copilot.SchemaField, envVars []copilot.EnvVarInfo, version, configPath string) *Model {
 entries := buildEntries(cfg, schema)
 lp := NewListPanel(entries)
 dp := NewDetailPanel()
+ep := NewEnvVarsPanel(envVars)
 
 if item := lp.SelectedItem(); item != nil {
 dp.SetField(item.Field, item.Value)
@@ -44,11 +47,13 @@ dp.SetField(item.Field, item.Value)
 return &Model{
 cfg:         cfg,
 schema:      schema,
+envVars:     envVars,
 version:     version,
 configPath:  configPath,
 state:       StateBrowsing,
 listPanel:   lp,
 detailPanel: dp,
+envPanel:    ep,
 keys:        DefaultKeyMap(),
 }
 }
@@ -171,7 +176,11 @@ if k == "ctrl+c" {
 slog.Info("user quit", "state", m.state)
 return m, tea.Quit
 }
-if k == "ctrl+s" {
+
+switch m.state {
+case StateBrowsing:
+switch k {
+case "ctrl+s":
 slog.Info("saving config", "path", m.configPath)
 if err := config.SaveConfig(m.configPath, m.cfg); err != nil {
 m.err = err
@@ -180,12 +189,6 @@ slog.Error("save failed", "error", err)
 m.saved = true
 slog.Info("config saved")
 }
-return m, nil
-}
-
-switch m.state {
-case StateBrowsing:
-switch k {
 case "up", "k":
 m.listPanel.Up()
 m.syncDetailPanel()
@@ -198,9 +201,22 @@ m.state = StateEditing
 slog.Info("editing", "field", item.Field.Name)
 return m, m.detailPanel.StartEditing()
 }
+case "right", "l", "tab":
+m.state = StateEnvVars
+slog.Info("switched to env vars view")
 }
 case StateEditing:
-if k == "esc" {
+switch k {
+case "ctrl+s":
+slog.Info("saving config", "path", m.configPath)
+if err := config.SaveConfig(m.configPath, m.cfg); err != nil {
+m.err = err
+slog.Error("save failed", "error", err)
+} else {
+m.saved = true
+slog.Info("config saved")
+}
+case "esc":
 newValue := m.detailPanel.StopEditing()
 if item := m.listPanel.SelectedItem(); item != nil {
 slog.Info("field updated", "field", item.Field.Name)
@@ -209,9 +225,20 @@ m.listPanel.UpdateItemValue(item.Field.Name, newValue)
 }
 m.state = StateBrowsing
 return m, nil
-}
+default:
 // All other keys go to detail panel
 return m, m.detailPanel.Update(msg)
+}
+case StateEnvVars:
+switch k {
+case "left", "h", "tab":
+m.state = StateBrowsing
+slog.Info("switched to config view")
+case "up", "k":
+m.envPanel.Up()
+case "down", "j":
+m.envPanel.Down()
+}
 }
 
 return m, nil
@@ -256,6 +283,17 @@ listContentH = 1
 
 m.listPanel.SetSize(listContentW, listContentH)
 m.detailPanel.SetSize(detailContentW, detailContentH)
+
+// Env panel sizing
+envPanelW := innerWidth - 4
+envPanelH := panelHeight - 2
+if envPanelW < 1 {
+envPanelW = 1
+}
+if envPanelH < 1 {
+envPanelH = 1
+}
+m.envPanel.SetSize(envPanelW, envPanelH)
 }
 
 // View renders the model.
@@ -290,6 +328,15 @@ titleBlock := lipgloss.JoinVertical(lipgloss.Left, title, version)
 headerContent := lipgloss.JoinHorizontal(lipgloss.Center, iconBlock, "  ", titleBlock)
 
 // Panels
+var panels string
+if m.state == StateEnvVars {
+envContent := m.envPanel.View()
+envPanelRendered := focusedPanelStyle.
+Width(innerWidth - 4).
+Height(panelHeight - 2).
+Render(envContent)
+panels = envPanelRendered
+} else {
 listContent := m.listPanel.View()
 detailContent := m.detailPanel.View()
 
@@ -311,7 +358,8 @@ Width(rightWidth - 4).
 Height(panelHeight - 2).
 Render(detailContent)
 
-panels := lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, " ", rightPanel)
+panels = lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, " ", rightPanel)
+}
 
 // Help bar
 helpKeys := m.keys.ShortHelp(m.state)
@@ -338,9 +386,11 @@ Render(inner)
 func (k KeyMap) ShortHelp(state State) []key.Binding {
 switch state {
 case StateBrowsing:
-return []key.Binding{k.Up, k.Down, k.Enter, k.Save, k.Quit}
+return []key.Binding{k.Up, k.Down, k.Enter, k.Right, k.Tab, k.Save, k.Quit}
 case StateEditing:
 return []key.Binding{k.Escape, k.Save, k.Quit}
+case StateEnvVars:
+return []key.Binding{k.Up, k.Down, k.Left, k.Tab, k.Quit}
 default:
 return []key.Binding{k.Quit}
 }

@@ -1,0 +1,23 @@
+Environment Variables:
+
+  `COLORFGBG`: fallback to detect dark / light backgrounds; uses form of "fg;bg" where each field is a number from 0-15 corresponding to ANSI colors.
+
+  `COPILOT_ALLOW_ALL`: allow all tools to run automatically without confirmation when set to "true".
+
+  `COPILOT_AUTO_UPDATE`: set to "false" to disable downloading updated CLI versions automatically. Can also be disabled with the --no-auto-update flag. Auto-update is enabled by default, except in CI environments (detected via `CI`, `BUILD_NUMBER`, `RUN_ID`, or `SYSTEM_COLLECTIONURI` environment variables), where it is disabled by default.
+
+  `COPILOT_CUSTOM_INSTRUCTIONS_DIRS`: comma-separated list of additional directories to search for custom instructions files (in addition to git root and current working directory).
+
+  `COPILOT_EDITOR`, `VISUAL`, `EDITOR` (in order of precedence): command used to interactively edit a file (e.g., the plan).
+
+  `COPILOT_MODEL`: optionally set the agent model. Can be overridden by the --model command line option or the /model command.
+
+  `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN` (in order of precedence): an authentication token that takes precedence over previously stored credentials.
+
+  `USE_BUILTIN_RIPGREP`: when set to "false", uses the ripgrep binary from PATH instead of the bundled version.
+
+  `PLAIN_DIFF`: when set to "true", disables rich diff rendering (syntax highlighting via diff tool specified by git config). Can also be set with the --plain-diff flag.
+
+  `XDG_CONFIG_HOME`: override the directory where configuration files are stored; defaults to `$HOME/.copilot`.
+
+  `XDG_STATE_HOME`: override the directory where state files are stored; defaults to `$HOME/.copilot`.

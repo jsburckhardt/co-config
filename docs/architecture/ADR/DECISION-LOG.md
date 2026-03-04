@@ -8,6 +8,7 @@ This file is the single registry of all architectural decisions and core-compone
 |----|-------|--------|------|
 | ADR-0002 | [Go with Charm TUI Stack](ADR-0002-go-charm-tui-stack.md) | Accepted | 2026-02-20 |
 | ADR-0003 | [Two-Panel TUI Layout Pattern](ADR-0003-two-panel-tui-layout.md) | Accepted | 2026-02-20 |
+| ADR-0004 | [TUI Multi-View Tab Navigation](ADR-0004-tui-multi-view-navigation.md) | Accepted | 2026-02-20 |
 
 ## Core-Components
 
@@ -40,3 +41,9 @@ Short, actionable statements derived from ADRs and core-components. More than on
 | 14 | Use `bubbles/textinput` and `bubbles/textarea` for right panel editing | ADR-0003 | 2026-02-20 |
 | 15 | Enable fullscreen mode via `tea.WithAltScreen()` for immersive UX | ADR-0003 | 2026-02-20 |
 | 16 | Frame the entire TUI with Lipgloss borders and branded header | ADR-0003 | 2026-02-20 |
+| 17 | Use left/right arrow keys, h/l, and tab to switch between TUI views | ADR-0004 | 2026-02-20 |
+| 18 | Add StateEnvVars to the TUI state machine for the environment variables view | ADR-0004 | 2026-02-20 |
+| 19 | Render env vars view as read-only — no editing, no saving | ADR-0004 | 2026-02-20 |
+| 20 | Show view-specific key hints in the help bar per state | ADR-0004 | 2026-02-20 |
+| 21 | Auto-detect env var metadata by running `copilot help environment` at startup | ADR-0004 | 2026-02-20 |
+| 22 | Mask sensitive env var values (COPILOT_GITHUB_TOKEN, GH_TOKEN, GITHUB_TOKEN) using CC-0005 patterns | ADR-0004 | 2026-02-20 |
