@@ -8,6 +8,8 @@ const (
 	StateBrowsing State = iota
 	// StateEditing: right panel input widget is focused, Esc saves and returns to browsing
 	StateEditing
+	// StateModelPicker: full-screen filterable list overlay for large enum fields
+	StateModelPicker
 	// StateSaving: persisting changes to config file
 	StateSaving
 	// StateExiting: final save (if needed) and quit
@@ -22,6 +24,8 @@ func (s State) String() string {
 		return "Browsing"
 	case StateEditing:
 		return "Editing"
+	case StateModelPicker:
+		return "ModelPicker"
 	case StateSaving:
 		return "Saving"
 	case StateExiting:

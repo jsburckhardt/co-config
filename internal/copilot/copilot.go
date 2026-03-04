@@ -42,6 +42,29 @@ func ParseVersion(output string) (string, error) {
 	return matches[1], nil
 }
 
+// knownModels is the fallback list of model options when the parser cannot
+// extract them from `copilot help config` (the output format varies across
+// CLI versions and sometimes lists model options under an unrelated field).
+var knownModels = []string{
+	"claude-sonnet-4.6",
+	"claude-sonnet-4.5",
+	"claude-haiku-4.5",
+	"claude-opus-4.6",
+	"claude-opus-4.6-fast",
+	"claude-opus-4.5",
+	"claude-sonnet-4",
+	"gemini-3-pro-preview",
+	"gpt-5.3-codex",
+	"gpt-5.2-codex",
+	"gpt-5.2",
+	"gpt-5.1-codex-max",
+	"gpt-5.1-codex",
+	"gpt-5.1",
+	"gpt-5.1-codex-mini",
+	"gpt-5-mini",
+	"gpt-4.1",
+}
+
 // DetectSchema runs `copilot help config` and parses all settings into SchemaField structs
 func DetectSchema() ([]SchemaField, error) {
 	// First check if copilot binary exists
@@ -158,6 +181,12 @@ func ParseSchema(output string) ([]SchemaField, error) {
 		
 		// If we detected enum options but type wasn't set, it's an enum
 		if len(field.Options) > 0 && field.Type != "enum" {
+			field.Type = "enum"
+		}
+
+		// Fallback: if the model field has no parsed options, use the known list
+		if field.Name == "model" && len(field.Options) == 0 {
+			field.Options = knownModels
 			field.Type = "enum"
 		}
 	}

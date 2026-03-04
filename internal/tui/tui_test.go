@@ -1,6 +1,7 @@
 package tui
 
 import (
+"fmt"
 "os"
 "path/filepath"
 "strings"
@@ -1679,4 +1680,279 @@ break
 if !hasModified {
 t.Error("Modified flags should be preserved when save fails")
 }
+}
+
+// UT-TUI-072: Enter on large enum transitions to StateModelPicker
+func TestEnterOnLargeEnumTransitionsToModelPicker(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4.1")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "",
+			Options: []string{
+				"claude-sonnet-4.6", "claude-sonnet-4.5", "claude-haiku-4.5",
+				"claude-opus-4.6", "claude-opus-4.6-fast", "gpt-4.1",
+			},
+			Description: "AI model"},
+	}
+
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	if model.state != StateBrowsing {
+		t.Fatalf("Expected initial state Browsing, got %v", model.state)
+	}
+
+	item := model.listPanel.SelectedItem()
+	if item == nil || item.Field.Name != "model" {
+		t.Fatalf("Expected selected item to be 'model', got %v", item)
+	}
+
+	msg := tea.KeyMsg{Type: tea.KeyEnter}
+	newModel, _ := model.Update(msg)
+	m := newModel.(*Model)
+
+	if m.state != StateModelPicker {
+		t.Errorf("Expected StateModelPicker after Enter on large enum, got %v", m.state)
+	}
+	if m.modelPickerPanel == nil {
+		t.Error("Expected modelPickerPanel to be non-nil")
+	}
+	if m.modelPickerPanel != nil && m.modelPickerPanel.SelectedValue() != "gpt-4.1" {
+		t.Errorf("Expected pre-selected value 'gpt-4.1', got %q", m.modelPickerPanel.SelectedValue())
+	}
+}
+
+// UT-TUI-073: Enter on small enum transitions to StateEditing
+func TestEnterOnSmallEnumTransitionsToEditing(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("theme", "dark")
+
+	schema := []copilot.SchemaField{
+		{Name: "theme", Type: "enum", Default: "auto",
+			Options:     []string{"auto", "dark", "light"},
+			Description: "Color theme"},
+	}
+
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	msg := tea.KeyMsg{Type: tea.KeyEnter}
+	newModel, _ := model.Update(msg)
+	m := newModel.(*Model)
+
+	if m.state != StateEditing {
+		t.Errorf("Expected StateEditing after Enter on small enum, got %v", m.state)
+	}
+	if m.modelPickerPanel != nil {
+		t.Error("Expected modelPickerPanel to be nil for small enum")
+	}
+}
+
+// UT-TUI-074: ModelPickerPanel creation and pre-selection
+func TestModelPickerPanelCreation(t *testing.T) {
+	options := []string{
+		"claude-sonnet-4.6", "claude-sonnet-4.5", "claude-haiku-4.5",
+		"claude-opus-4.6", "claude-opus-4.6-fast", "claude-opus-4.5",
+		"claude-sonnet-4", "gemini-3-pro-preview",
+		"gpt-5.3-codex", "gpt-5.2-codex", "gpt-5.2",
+		"gpt-5.1-codex-max", "gpt-5.1-codex", "gpt-5.1",
+		"gpt-5.1-codex-mini", "gpt-5-mini", "gpt-4.1",
+	}
+	current := "claude-sonnet-4.5"
+
+	picker := NewModelPickerPanel(options, current)
+	picker.SetSize(60, 20)
+
+	if picker.SelectedValue() != "claude-sonnet-4.5" {
+		t.Errorf("Expected pre-selected value 'claude-sonnet-4.5', got %q", picker.SelectedValue())
+	}
+}
+
+// UT-TUI-075: ModelPickerPanel.View() renders non-empty string
+func TestModelPickerPanelView(t *testing.T) {
+	options := []string{
+		"claude-sonnet-4.6", "claude-sonnet-4.5", "claude-haiku-4.5",
+		"gpt-5.1-codex", "gpt-4.1",
+	}
+	picker := NewModelPickerPanel(options, "gpt-4.1")
+	picker.SetSize(60, 20)
+
+	view := picker.View()
+	if view == "" {
+		t.Error("ModelPickerPanel.View() returned empty string")
+	}
+	if !strings.Contains(view, "Select Model") {
+		t.Error("ModelPickerPanel.View() should contain 'Select Model' title")
+	}
+}
+
+// UT-TUI-076: Esc from StateModelPicker confirms and returns to StateBrowsing
+func TestEscFromModelPickerConfirmsAndReturns(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4.1")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "",
+			Options: []string{
+				"claude-sonnet-4.6", "claude-sonnet-4.5", "claude-haiku-4.5",
+				"claude-opus-4.6", "claude-opus-4.6-fast", "gpt-4.1",
+			},
+			Description: "AI model"},
+	}
+
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	enterMsg := tea.KeyMsg{Type: tea.KeyEnter}
+	newModel, _ := model.Update(enterMsg)
+	m := newModel.(*Model)
+
+	if m.state != StateModelPicker {
+		t.Fatalf("Expected StateModelPicker, got %v", m.state)
+	}
+
+	escMsg := tea.KeyMsg{Type: tea.KeyEsc}
+	newModel, _ = m.Update(escMsg)
+	m = newModel.(*Model)
+
+	if m.state != StateBrowsing {
+		t.Errorf("Expected StateBrowsing after Esc, got %v", m.state)
+	}
+	if m.modelPickerPanel != nil {
+		t.Error("Expected modelPickerPanel to be nil after Esc")
+	}
+	if cfg.Get("model") != "gpt-4.1" {
+		t.Errorf("Expected config model to be 'gpt-4.1', got %v", cfg.Get("model"))
+	}
+}
+
+// UT-TUI-077: Enter from StateModelPicker confirms and returns
+func TestEnterFromModelPickerConfirmsAndReturns(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4.1")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "",
+			Options: []string{
+				"claude-sonnet-4.6", "claude-sonnet-4.5", "claude-haiku-4.5",
+				"claude-opus-4.6", "claude-opus-4.6-fast", "gpt-4.1",
+			},
+			Description: "AI model"},
+	}
+
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	enterMsg := tea.KeyMsg{Type: tea.KeyEnter}
+	newModel, _ := model.Update(enterMsg)
+	m := newModel.(*Model)
+
+	if m.state != StateModelPicker {
+		t.Fatalf("Expected StateModelPicker, got %v", m.state)
+	}
+
+	newModel, _ = m.Update(enterMsg)
+	m = newModel.(*Model)
+
+	if m.state != StateBrowsing {
+		t.Errorf("Expected StateBrowsing after Enter confirm, got %v", m.state)
+	}
+	if m.modelPickerPanel != nil {
+		t.Error("Expected modelPickerPanel to be nil after Enter confirm")
+	}
+}
+
+// UT-TUI-078: View() in StateModelPicker at various sizes renders without panic
+func TestViewInModelPickerAtVariousSizes(t *testing.T) {
+	sizes := []struct{ width, height int }{
+		{80, 24},
+		{120, 40},
+		{100, 30},
+	}
+
+	for _, sz := range sizes {
+		t.Run(fmt.Sprintf("%dx%d", sz.width, sz.height), func(t *testing.T) {
+			cfg := config.NewConfig()
+			cfg.Set("model", "gpt-4.1")
+
+			schema := []copilot.SchemaField{
+				{Name: "model", Type: "enum", Default: "",
+					Options: []string{
+						"claude-sonnet-4.6", "claude-sonnet-4.5", "claude-haiku-4.5",
+						"claude-opus-4.6", "claude-opus-4.6-fast", "gpt-4.1",
+					},
+					Description: "AI model"},
+			}
+
+			model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+			sizeMsg := tea.WindowSizeMsg{Width: sz.width, Height: sz.height}
+			newModel, _ := model.Update(sizeMsg)
+			m := newModel.(*Model)
+
+			enterMsg := tea.KeyMsg{Type: tea.KeyEnter}
+			newModel, _ = m.Update(enterMsg)
+			m = newModel.(*Model)
+
+			if m.state != StateModelPicker {
+				t.Fatalf("Expected StateModelPicker, got %v", m.state)
+			}
+
+			view := m.View()
+			if view == "" {
+				t.Errorf("View() at %dx%d in StateModelPicker returned empty string", sz.width, sz.height)
+			}
+			if !strings.Contains(view, "╭") {
+				t.Errorf("View() at %dx%d should contain outer frame border", sz.width, sz.height)
+			}
+		})
+	}
+}
+
+// UT-TUI-079: ctrl+s save works from StateModelPicker
+func TestCtrlSSaveFromModelPicker(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4.1")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "",
+			Options: []string{
+				"claude-sonnet-4.6", "claude-sonnet-4.5", "claude-haiku-4.5",
+				"claude-opus-4.6", "claude-opus-4.6-fast", "gpt-4.1",
+			},
+			Description: "AI model"},
+	}
+
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/nonexistent/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	enterMsg := tea.KeyMsg{Type: tea.KeyEnter}
+	newModel, _ := model.Update(enterMsg)
+	m := newModel.(*Model)
+
+	if m.state != StateModelPicker {
+		t.Fatalf("Expected StateModelPicker, got %v", m.state)
+	}
+
+	saveMsg := tea.KeyMsg{Type: tea.KeyCtrlS}
+	newModel, _ = m.Update(saveMsg)
+	m = newModel.(*Model)
+
+	if m.state != StateModelPicker {
+		t.Errorf("Expected state to remain StateModelPicker after ctrl+s, got %v", m.state)
+	}
+	// Save handler was reached (either succeeded or failed with error)
+	if !m.saved && m.err == nil {
+		t.Error("Expected save handler to be executed (either saved=true or err!=nil)")
+	}
 }

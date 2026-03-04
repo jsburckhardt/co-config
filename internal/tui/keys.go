@@ -14,6 +14,7 @@ Escape  key.Binding
 Save    key.Binding
 Quit    key.Binding
 Tab     key.Binding
+Filter  key.Binding
 }
 
 // DefaultKeyMap returns the default key bindings.
@@ -58,6 +59,10 @@ key.WithHelp("ctrl+c", "quit"),
 Tab: key.NewBinding(
 key.WithKeys("tab"),
 key.WithHelp("tab", "switch view"),
+),
+Filter: key.NewBinding(
+key.WithKeys("/"),
+key.WithHelp("/", "search"),
 ),
 }
 }
