@@ -1,6 +1,8 @@
 package tui
 
 import (
+"os"
+"path/filepath"
 "strings"
 "testing"
 
@@ -1075,7 +1077,7 @@ func TestViewInEnvVarsState(t *testing.T) {
 // UT-TUI-051: ShortHelp for StateBrowsing includes right/tab binding
 func TestShortHelpBrowsingIncludesRight(t *testing.T) {
 	km := DefaultKeyMap()
-	bindings := km.ShortHelp(StateBrowsing)
+	bindings := km.ShortHelp(StateBrowsing, "")
 	found := false
 	for _, b := range bindings {
 		if b.Help().Desc == "env vars" {
@@ -1091,7 +1093,7 @@ func TestShortHelpBrowsingIncludesRight(t *testing.T) {
 // UT-TUI-052: ShortHelp for StateEnvVars includes left/tab and omits enter/save
 func TestShortHelpEnvVarsBindings(t *testing.T) {
 	km := DefaultKeyMap()
-	bindings := km.ShortHelp(StateEnvVars)
+	bindings := km.ShortHelp(StateEnvVars, "")
 	var foundConfig, foundEdit, foundSave bool
 	for _, b := range bindings {
 		desc := b.Help().Desc
@@ -1119,7 +1121,7 @@ func TestShortHelpEnvVarsBindings(t *testing.T) {
 // UT-TUI-053: ShortHelp for StateEditing remains unchanged
 func TestShortHelpEditingUnchanged(t *testing.T) {
 	km := DefaultKeyMap()
-	bindings := km.ShortHelp(StateEditing)
+	bindings := km.ShortHelp(StateEditing, "")
 	descs := make(map[string]bool)
 	for _, b := range bindings {
 		descs[b.Help().Desc] = true
@@ -1148,4 +1150,533 @@ func TestNewModelNilEnvVars(t *testing.T) {
 	if model.envPanel == nil {
 		t.Fatal("NewModel with nil envVars should still create envPanel")
 	}
+}
+
+// UT-TUI-055: Enter commits enum field and returns to Browsing
+func TestEnterCommitsEnumField(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+}
+
+model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+// Enter editing
+newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m := newModel.(*Model)
+if m.state != StateEditing {
+t.Fatal("Expected StateEditing after Enter")
+}
+
+// Press Enter to commit (enum field, not list)
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m = newModel.(*Model)
+if m.state != StateBrowsing {
+t.Errorf("Expected StateBrowsing after Enter on enum field, got %v", m.state)
+}
+}
+
+// UT-TUI-056: Enter commits string field and returns to Browsing
+func TestEnterCommitsStringField(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("theme", "dark")
+
+schema := []copilot.SchemaField{
+{Name: "theme", Type: "string", Default: ""},
+}
+
+model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+// Enter editing
+newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m := newModel.(*Model)
+if m.state != StateEditing {
+t.Fatal("Expected StateEditing after Enter")
+}
+
+// Press Enter to commit (string field)
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m = newModel.(*Model)
+if m.state != StateBrowsing {
+t.Errorf("Expected StateBrowsing after Enter on string field, got %v", m.state)
+}
+}
+
+// UT-TUI-057: Enter commits bool field and returns to Browsing
+func TestEnterCommitsBoolField(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("stream", true)
+
+schema := []copilot.SchemaField{
+{Name: "stream", Type: "bool", Default: "true"},
+}
+
+model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+// Enter editing
+newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m := newModel.(*Model)
+if m.state != StateEditing {
+t.Fatal("Expected StateEditing after Enter")
+}
+
+// Press Enter to commit (bool field)
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m = newModel.(*Model)
+if m.state != StateBrowsing {
+t.Errorf("Expected StateBrowsing after Enter on bool field, got %v", m.state)
+}
+}
+
+// UT-TUI-058: Enter on list field stays in Editing
+func TestEnterOnListFieldStaysEditing(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("allowed_urls", []any{"https://example.com"})
+
+schema := []copilot.SchemaField{
+{Name: "allowed_urls", Type: "list"},
+}
+
+model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+// Enter editing
+newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m := newModel.(*Model)
+if m.state != StateEditing {
+t.Fatal("Expected StateEditing after Enter")
+}
+
+// Press Enter on list field — should stay in editing (newline in textarea)
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m = newModel.(*Model)
+if m.state != StateEditing {
+t.Errorf("Expected to remain in StateEditing for list field, got %v", m.state)
+}
+}
+
+// UT-TUI-059: Modified flag default and after UpdateItemValue
+func TestModifiedFlagDefaultAndAfterUpdate(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	cfg.Set("theme", "dark")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+		{Name: "theme", Type: "string", Default: "auto"},
+	}
+
+	entries := buildEntries(cfg, schema)
+	lp := NewListPanel(entries)
+
+	for _, e := range lp.entries {
+		if !e.isHeader && e.item.Modified {
+			t.Errorf("Entry %q should have Modified == false initially", e.item.Field.Name)
+		}
+	}
+
+	lp.UpdateItemValue("model", "gpt-3.5-turbo")
+
+	for _, e := range lp.entries {
+		if !e.isHeader && e.item.Field.Name == "model" {
+			if !e.item.Modified {
+				t.Error("Entry 'model' should have Modified == true after UpdateItemValue")
+			}
+		}
+		if !e.isHeader && e.item.Field.Name == "theme" {
+			if e.item.Modified {
+				t.Error("Entry 'theme' should still have Modified == false")
+			}
+		}
+	}
+}
+
+// UT-TUI-060: renderItem appends (not-saved) when Modified is true
+func TestRenderItemNotSavedIndicator(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	cfg.Set("theme", "dark")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+		{Name: "theme", Type: "string", Default: "auto"},
+	}
+
+	entries := buildEntries(cfg, schema)
+	lp := NewListPanel(entries)
+	lp.SetSize(60, 20)
+
+	lp.UpdateItemValue("model", "gpt-3.5-turbo")
+
+	view := lp.View()
+
+	if !strings.Contains(view, "(not-saved)") {
+		t.Error("Expected '(not-saved)' indicator in rendered output for modified field")
+	}
+
+	lines := strings.Split(view, "\n")
+	for _, line := range lines {
+		if strings.Contains(line, "theme") && strings.Contains(line, "(not-saved)") {
+			t.Error("Unmodified field 'theme' should NOT have '(not-saved)' indicator")
+		}
+	}
+}
+
+// UT-TUI-061: ClearAllModified resets all Modified flags
+func TestClearAllModified(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	cfg.Set("theme", "dark")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+		{Name: "theme", Type: "string", Default: "auto"},
+	}
+
+	entries := buildEntries(cfg, schema)
+	lp := NewListPanel(entries)
+
+	lp.UpdateItemValue("model", "gpt-3.5-turbo")
+	lp.UpdateItemValue("theme", "light")
+
+	modCount := 0
+	for _, e := range lp.entries {
+		if !e.isHeader && e.item.Modified {
+			modCount++
+		}
+	}
+	if modCount < 2 {
+		t.Fatalf("Expected at least 2 modified entries, got %d", modCount)
+	}
+
+	lp.ClearAllModified()
+
+	for _, e := range lp.entries {
+		if !e.isHeader && e.item.Modified {
+			t.Errorf("Entry %q should have Modified == false after ClearAllModified", e.item.Field.Name)
+		}
+	}
+}
+
+// UT-TUI-062: Saved flag cleared after commit
+func TestSavedFlagClearedAfterCommit(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+}
+
+t.Run("Esc commit clears saved", func(t *testing.T) {
+model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+model.saved = true
+
+newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m := newModel.(*Model)
+
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+m = newModel.(*Model)
+if m.saved {
+t.Error("saved should be false after Esc commit")
+}
+if m.state != StateBrowsing {
+t.Error("should be in StateBrowsing after Esc")
+}
+})
+
+t.Run("Enter commit clears saved", func(t *testing.T) {
+model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+model.saved = true
+
+newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m := newModel.(*Model)
+
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m = newModel.(*Model)
+if m.saved {
+t.Error("saved should be false after Enter commit")
+}
+if m.state != StateBrowsing {
+t.Error("should be in StateBrowsing after Enter")
+}
+})
+}
+
+// UT-TUI-063: Help bar shows enter confirm for non-list editing
+func TestHelpBarEnterConfirmNonList(t *testing.T) {
+keys := DefaultKeyMap()
+bindings := keys.ShortHelp(StateEditing, "string")
+
+found := false
+for _, b := range bindings {
+h := b.Help()
+if h.Key == "enter" && strings.Contains(h.Desc, "confirm") {
+found = true
+}
+}
+if !found {
+t.Error("Expected 'enter' + 'confirm' binding in editing help for non-list field")
+}
+}
+
+// UT-TUI-064: Help bar omits enter confirm for list editing
+func TestHelpBarNoEnterConfirmList(t *testing.T) {
+keys := DefaultKeyMap()
+bindings := keys.ShortHelp(StateEditing, "list")
+
+for _, b := range bindings {
+h := b.Help()
+if h.Key == "enter" && strings.Contains(h.Desc, "confirm") {
+t.Error("List editing should NOT show 'enter confirm' binding")
+}
+}
+}
+
+// UT-TUI-065: CurrentFieldType accessor returns correct type
+func TestCurrentFieldType(t *testing.T) {
+	dp := NewDetailPanel()
+	dp.SetSize(50, 20)
+
+	tests := []struct {
+		name     string
+		field    copilot.SchemaField
+		value    any
+		wantType string
+	}{
+		{"string", copilot.SchemaField{Name: "theme", Type: "string", Default: ""}, "dark", "string"},
+		{"bool", copilot.SchemaField{Name: "stream", Type: "bool", Default: "true"}, true, "bool"},
+		{"enum", copilot.SchemaField{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}}, "gpt-4", "enum"},
+		{"list", copilot.SchemaField{Name: "allowed_urls", Type: "list"}, []any{"https://example.com"}, "list"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dp.SetField(tt.field, tt.value)
+			got := dp.CurrentFieldType()
+			if got != tt.wantType {
+				t.Errorf("CurrentFieldType() = %q, want %q", got, tt.wantType)
+			}
+		})
+	}
+}
+
+// UT-TUI-066: CurrentFieldType returns empty string for nil field
+func TestCurrentFieldTypeNilField(t *testing.T) {
+	dp := NewDetailPanel()
+	got := dp.CurrentFieldType()
+	if got != "" {
+		t.Errorf("CurrentFieldType() on fresh panel = %q, want empty string", got)
+	}
+}
+
+// UT-TUI-067: (not-saved) not shown when Modified is false
+func TestNotSavedNotShownWhenUnmodified(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	cfg.Set("theme", "dark")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+		{Name: "theme", Type: "string", Default: "auto"},
+	}
+
+	entries := buildEntries(cfg, schema)
+	lp := NewListPanel(entries)
+	lp.SetSize(60, 20)
+
+	view := lp.View()
+
+	if strings.Contains(view, "(not-saved)") {
+		t.Error("No '(not-saved)' indicator should appear when no fields are modified")
+	}
+}
+
+// UT-TUI-068: Narrow terminal with (not-saved) does not panic
+func TestNarrowTerminalNotSavedNoPanic(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+	}
+
+	entries := buildEntries(cfg, schema)
+	lp := NewListPanel(entries)
+	lp.SetSize(30, 10)
+
+	lp.UpdateItemValue("model", "gpt-3.5-turbo")
+
+	view := lp.View()
+	if view == "" {
+		t.Error("View() at narrow width returned empty string")
+	}
+}
+
+// UT-TUI-069: Post-save reload preserves cursor by field name
+func TestPostSaveReloadPreservesCursor(t *testing.T) {
+tmpDir := t.TempDir()
+tmpFile := filepath.Join(tmpDir, "config.json")
+
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+cfg.Set("theme", "dark")
+cfg.Set("stream", true)
+
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+{Name: "stream", Type: "bool", Default: "true"},
+{Name: "theme", Type: "string", Default: "auto"},
+}
+
+if err := config.SaveConfig(tmpFile, cfg); err != nil {
+t.Fatalf("Failed to write initial config: %v", err)
+}
+
+model := NewModel(cfg, schema, nil, "0.0.412", tmpFile)
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+model.listPanel.Down()
+selectedBefore := model.listPanel.SelectedItem()
+if selectedBefore == nil {
+t.Fatal("Expected a selected item after Down")
+}
+fieldNameBefore := selectedBefore.Field.Name
+
+newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+m := newModel.(*Model)
+
+if !m.saved {
+t.Error("Expected saved == true after Ctrl+S")
+}
+if m.err != nil {
+t.Errorf("Expected no error after save, got: %v", m.err)
+}
+
+selectedAfter := m.listPanel.SelectedItem()
+if selectedAfter == nil {
+t.Fatal("Expected a selected item after save+reload")
+}
+if selectedAfter.Field.Name != fieldNameBefore {
+t.Errorf("Expected cursor on %q after save+reload, got %q", fieldNameBefore, selectedAfter.Field.Name)
+}
+}
+
+// UT-TUI-070: Modified flags cleared after successful save
+func TestModifiedFlagsClearedAfterSave(t *testing.T) {
+tmpDir := t.TempDir()
+tmpFile := filepath.Join(tmpDir, "config.json")
+
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+}
+
+if err := config.SaveConfig(tmpFile, cfg); err != nil {
+t.Fatalf("Failed to write initial config: %v", err)
+}
+
+model := NewModel(cfg, schema, nil, "0.0.412", tmpFile)
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m := newModel.(*Model)
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+m = newModel.(*Model)
+
+hasModified := false
+for _, e := range m.listPanel.entries {
+if !e.isHeader && e.item.Modified {
+hasModified = true
+break
+}
+}
+if !hasModified {
+t.Fatal("Expected at least one modified entry before save")
+}
+
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+m = newModel.(*Model)
+
+if !m.saved {
+t.Error("Expected saved == true after Ctrl+S")
+}
+
+for _, e := range m.listPanel.entries {
+if !e.isHeader && e.item.Modified {
+t.Errorf("Entry %q should have Modified == false after save", e.item.Field.Name)
+}
+}
+
+view := m.listPanel.View()
+if strings.Contains(view, "(not-saved)") {
+t.Error("No '(not-saved)' text should appear after successful save")
+}
+}
+
+// UT-TUI-071: Save failure does not clear Modified flags
+func TestSaveFailureKeepsModifiedFlags(t *testing.T) {
+cfg := config.NewConfig()
+cfg.Set("model", "gpt-4")
+
+schema := []copilot.SchemaField{
+{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+}
+
+invalidPath := filepath.Join(string(os.PathSeparator), "nonexistent", "deep", "path", "config.json")
+
+model := NewModel(cfg, schema, nil, "0.0.412", invalidPath)
+model.windowWidth = 100
+model.windowHeight = 30
+model.updateSizes()
+
+newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+m := newModel.(*Model)
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+m = newModel.(*Model)
+
+newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+m = newModel.(*Model)
+
+if m.err == nil {
+t.Error("Expected error after save to invalid path")
+}
+if m.saved {
+t.Error("Expected saved == false after failed save")
+}
+
+hasModified := false
+for _, e := range m.listPanel.entries {
+if !e.isHeader && e.item.Modified {
+hasModified = true
+break
+}
+}
+if !hasModified {
+t.Error("Modified flags should be preserved when save fails")
+}
 }

@@ -4,15 +4,16 @@ import "github.com/charmbracelet/bubbles/key"
 
 // KeyMap defines the key bindings for the TUI.
 type KeyMap struct {
-Up     key.Binding
-Down   key.Binding
-Left   key.Binding
-Right  key.Binding
-Enter  key.Binding
-Escape key.Binding
-Save   key.Binding
-Quit   key.Binding
-Tab    key.Binding
+Up      key.Binding
+Down    key.Binding
+Left    key.Binding
+Right   key.Binding
+Enter   key.Binding
+Confirm key.Binding
+Escape  key.Binding
+Save    key.Binding
+Quit    key.Binding
+Tab     key.Binding
 }
 
 // DefaultKeyMap returns the default key bindings.
@@ -37,6 +38,10 @@ key.WithHelp("→/l", "env vars"),
 Enter: key.NewBinding(
 key.WithKeys("enter"),
 key.WithHelp("enter", "edit"),
+),
+Confirm: key.NewBinding(
+key.WithKeys("enter"),
+key.WithHelp("enter", "confirm"),
 ),
 Escape: key.NewBinding(
 key.WithKeys("esc"),

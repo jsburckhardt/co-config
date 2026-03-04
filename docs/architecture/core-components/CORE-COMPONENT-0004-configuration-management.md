@@ -21,6 +21,9 @@ The `internal/config` package. Affects how the TUI presents config fields and ho
 - The installed copilot version is detected by running `copilot version` and parsing the output
 - When writing config, only known editable fields are updated; sensitive, token-like, and unknown fields are preserved unchanged and displayed as read-only in the TUI
 - Config validation occurs before writing — invalid values are rejected with user-friendly errors
+- The TUI must track per-field dirty state (`Modified` flag) for in-memory changes that have not yet been persisted to disk, and surface this to the user via a "(not-saved)" indicator
+- After a successful `SaveConfig`, the TUI must re-read the config file from disk via `LoadConfig` to verify round-trip integrity and reflect the actual persisted state
+- The "✓ Saved" UI indicator must be cleared immediately when any new in-memory change is committed, so the banner never shows stale information
 
 ### Interfaces
 - `Config` struct holds typed known fields plus a raw `map[string]any` for round-tripping
@@ -67,6 +70,9 @@ err = config.SaveConfig(config.DefaultPath(), cfg)
 - The TUI layer calls `Config.Set()` to update values
 - On form submission, call `SaveConfig()` to persist
 - Always load schema before presenting the form so field metadata is available
+- After `SaveConfig()` succeeds, call `LoadConfig()` and rebuild list entries from the reloaded config to verify the round-trip
+- Mark fields as modified when `Config.Set()` is called from the TUI; clear all modified markers after a successful save-and-reload cycle
+- If post-save `LoadConfig()` fails, show a non-fatal error in the UI header and keep the in-memory state
 
 ## Exceptions
 
