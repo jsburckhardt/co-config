@@ -47,3 +47,6 @@ Short, actionable statements derived from ADRs and core-components. More than on
 | 20 | Show view-specific key hints in the help bar per state | ADR-0004 | 2026-02-20 |
 | 21 | Auto-detect env var metadata by running `copilot help environment` at startup | ADR-0004 | 2026-02-20 |
 | 22 | Mask sensitive env var values (COPILOT_GITHUB_TOKEN, GH_TOKEN, GITHUB_TOKEN) using CC-0005 patterns | ADR-0004 | 2026-02-20 |
+| 23 | Track per-field dirty state via `Modified` flag on `ConfigItem` | CC-0004 | 2026-02-21 |
+| 24 | Re-read config from disk after every successful save to verify round-trip integrity | CC-0004 | 2026-02-21 |
+| 25 | Clear "✓ Saved" indicator when any new in-memory change is committed | CC-0004 | 2026-02-21 |

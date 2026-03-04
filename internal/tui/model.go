@@ -1,6 +1,7 @@
 package tui
 
 import (
+"fmt"
 "log/slog"
 "sort"
 "strings"
@@ -181,14 +182,7 @@ switch m.state {
 case StateBrowsing:
 switch k {
 case "ctrl+s":
-slog.Info("saving config", "path", m.configPath)
-if err := config.SaveConfig(m.configPath, m.cfg); err != nil {
-m.err = err
-slog.Error("save failed", "error", err)
-} else {
-m.saved = true
-slog.Info("config saved")
-}
+m.saveConfig()
 case "up", "k":
 m.listPanel.Up()
 m.syncDetailPanel()
@@ -208,23 +202,17 @@ slog.Info("switched to env vars view")
 case StateEditing:
 switch k {
 case "ctrl+s":
-slog.Info("saving config", "path", m.configPath)
-if err := config.SaveConfig(m.configPath, m.cfg); err != nil {
-m.err = err
-slog.Error("save failed", "error", err)
-} else {
-m.saved = true
-slog.Info("config saved")
-}
+m.saveConfig()
 case "esc":
-newValue := m.detailPanel.StopEditing()
-if item := m.listPanel.SelectedItem(); item != nil {
-slog.Info("field updated", "field", item.Field.Name)
-m.cfg.Set(item.Field.Name, newValue)
-m.listPanel.UpdateItemValue(item.Field.Name, newValue)
-}
-m.state = StateBrowsing
+m.commitAndReturnToBrowsing()
 return m, nil
+case "enter":
+if m.detailPanel.CurrentFieldType() != "list" {
+m.commitAndReturnToBrowsing()
+return m, nil
+}
+// For list fields, fall through to detail panel
+return m, m.detailPanel.Update(msg)
 default:
 // All other keys go to detail panel
 return m, m.detailPanel.Update(msg)
@@ -247,6 +235,98 @@ return m, nil
 func (m *Model) syncDetailPanel() {
 if item := m.listPanel.SelectedItem(); item != nil {
 m.detailPanel.SetField(item.Field, item.Value)
+}
+}
+
+// commitAndReturnToBrowsing stops editing, commits the value, and returns to browsing.
+func (m *Model) commitAndReturnToBrowsing() {
+newValue := m.detailPanel.StopEditing()
+if item := m.listPanel.SelectedItem(); item != nil {
+slog.Info("field updated", "field", item.Field.Name)
+m.cfg.Set(item.Field.Name, newValue)
+m.listPanel.UpdateItemValue(item.Field.Name, newValue)
+}
+m.saved = false
+m.err = nil
+m.state = StateBrowsing
+m.syncDetailPanel()
+}
+
+// saveConfig persists config to disk, reloads to verify round-trip, and clears modified flags.
+func (m *Model) saveConfig() {
+slog.Info("saving config", "path", m.configPath)
+if err := config.SaveConfig(m.configPath, m.cfg); err != nil {
+m.err = err
+slog.Error("save failed", "error", err)
+return
+}
+m.saved = true
+m.err = nil
+slog.Info("config saved")
+
+// Post-save reload from disk
+reloaded, err := config.LoadConfig(m.configPath)
+if err != nil {
+m.err = fmt.Errorf("saved but reload failed: %w", err)
+slog.Error("post-save reload failed", "error", err)
+} else {
+// Save cursor position by field name
+var cursorFieldName string
+if item := m.listPanel.SelectedItem(); item != nil {
+cursorFieldName = item.Field.Name
+}
+
+// Replace config and rebuild entries
+m.cfg = reloaded
+entries := buildEntries(m.cfg, m.schema)
+m.listPanel = NewListPanel(entries)
+m.listPanel.SetSize(m.listPanelWidth(), m.listPanelHeight())
+
+// Restore cursor to same field name
+if cursorFieldName != "" {
+m.selectFieldByName(cursorFieldName)
+}
+
+m.syncDetailPanel()
+}
+
+// Clear modified flags
+m.listPanel.ClearAllModified()
+}
+
+// listPanelWidth returns the content width of the list panel.
+func (m *Model) listPanelWidth() int {
+innerWidth := m.windowWidth - 2
+leftWidth := int(float64(innerWidth) * 0.40)
+w := leftWidth - 4
+if w < 1 {
+w = 1
+}
+return w
+}
+
+// listPanelHeight returns the content height of the list panel.
+func (m *Model) listPanelHeight() int {
+innerHeight := m.windowHeight - 2
+panelHeight := innerHeight - 10
+if panelHeight < 3 {
+panelHeight = 3
+}
+h := panelHeight - 2
+if h < 1 {
+h = 1
+}
+return h
+}
+
+// selectFieldByName moves the cursor to the entry with the given field name.
+func (m *Model) selectFieldByName(name string) {
+for i, e := range m.listPanel.entries {
+if !e.isHeader && e.item.Field.Name == name {
+m.listPanel.cursor = i
+m.listPanel.ensureVisible()
+return
+}
 }
 }
 
@@ -362,7 +442,8 @@ panels = lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, " ", rightPanel)
 }
 
 // Help bar
-helpKeys := m.keys.ShortHelp(m.state)
+fieldType := m.detailPanel.CurrentFieldType()
+helpKeys := m.keys.ShortHelp(m.state, fieldType)
 var parts []string
 for _, kb := range helpKeys {
 h := kb.Help()
@@ -383,11 +464,14 @@ Render(inner)
 }
 
 // ShortHelp returns bindings for the help bar based on current state.
-func (k KeyMap) ShortHelp(state State) []key.Binding {
+func (k KeyMap) ShortHelp(state State, fieldType string) []key.Binding {
 switch state {
 case StateBrowsing:
 return []key.Binding{k.Up, k.Down, k.Enter, k.Right, k.Tab, k.Save, k.Quit}
 case StateEditing:
+if fieldType != "list" {
+return []key.Binding{k.Confirm, k.Escape, k.Save, k.Quit}
+}
 return []key.Binding{k.Escape, k.Save, k.Quit}
 case StateEnvVars:
 return []key.Binding{k.Up, k.Down, k.Left, k.Tab, k.Quit}

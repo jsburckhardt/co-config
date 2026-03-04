@@ -10,8 +10,9 @@ import (
 
 // ConfigItem represents a config field in the list.
 type ConfigItem struct {
-Field copilot.SchemaField
-Value any
+Field    copilot.SchemaField
+Value    any
+Modified bool
 }
 
 type listEntry struct {
@@ -79,9 +80,17 @@ func (l *ListPanel) UpdateItemValue(fieldName string, newValue any) {
 for i, e := range l.entries {
 if !e.isHeader && e.item.Field.Name == fieldName {
 l.entries[i].item.Value = newValue
+l.entries[i].item.Modified = true
 break
 }
 }
+}
+
+// ClearAllModified resets the Modified flag on all entries.
+func (l *ListPanel) ClearAllModified() {
+	for i := range l.entries {
+		l.entries[i].item.Modified = false
+	}
 }
 
 func (l *ListPanel) ensureVisible() {
@@ -153,10 +162,16 @@ if isSens || isToken {
 val = "🔒"
 } else {
 valWidth := l.width - nameWidth - 4
+if item.Modified {
+valWidth -= 12 // room for " (not-saved)"
+}
 if valWidth < 3 {
 valWidth = 3
 }
 val = formatValueCompact(item.Value, item.Field.Default, valWidth)
+if item.Modified {
+val += " (not-saved)"
+}
 }
 
 line := fmt.Sprintf("%-*s %s", nameWidth, name, val)

@@ -193,6 +193,14 @@ d.textArea.SetWidth(width - 4)
 }
 }
 
+// CurrentFieldType returns the type of the currently loaded field, or "" if none.
+func (d *DetailPanel) CurrentFieldType() string {
+	if d.field == nil {
+		return ""
+	}
+	return d.field.Type
+}
+
 // View renders the detail panel content (no border — the caller applies the border).
 func (d *DetailPanel) View() string {
 if d.field == nil {
