@@ -53,3 +53,22 @@ func LooksLikeToken(value string) bool {
 	}
 	return false
 }
+
+// SensitiveEnvVars is the list of environment variable names considered sensitive.
+var SensitiveEnvVars = []string{
+	"COPILOT_GITHUB_TOKEN",
+	"GH_TOKEN",
+	"GITHUB_TOKEN",
+}
+
+// IsEnvVarSensitive checks if an environment variable name is classified as sensitive.
+// The check is case-insensitive.
+func IsEnvVarSensitive(name string) bool {
+	upper := strings.ToUpper(name)
+	for _, s := range SensitiveEnvVars {
+		if strings.ToUpper(s) == upper {
+			return true
+		}
+	}
+	return false
+}

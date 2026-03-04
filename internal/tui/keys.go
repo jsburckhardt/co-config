@@ -6,6 +6,8 @@ import "github.com/charmbracelet/bubbles/key"
 type KeyMap struct {
 Up     key.Binding
 Down   key.Binding
+Left   key.Binding
+Right  key.Binding
 Enter  key.Binding
 Escape key.Binding
 Save   key.Binding
@@ -23,6 +25,14 @@ key.WithHelp("↑/k", "up"),
 Down: key.NewBinding(
 key.WithKeys("down", "j"),
 key.WithHelp("↓/j", "down"),
+),
+Left: key.NewBinding(
+key.WithKeys("left", "h"),
+key.WithHelp("←/h", "config"),
+),
+Right: key.NewBinding(
+key.WithKeys("right", "l"),
+key.WithHelp("→/l", "env vars"),
 ),
 Enter: key.NewBinding(
 key.WithKeys("enter"),
@@ -42,7 +52,7 @@ key.WithHelp("ctrl+c", "quit"),
 ),
 Tab: key.NewBinding(
 key.WithKeys("tab"),
-key.WithHelp("tab", "switch"),
+key.WithHelp("tab", "switch view"),
 ),
 }
 }

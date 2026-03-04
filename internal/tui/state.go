@@ -12,6 +12,8 @@ const (
 	StateSaving
 	// StateExiting: final save (if needed) and quit
 	StateExiting
+	// StateEnvVars: environment variables view is active (read-only)
+	StateEnvVars
 )
 
 func (s State) String() string {
@@ -24,6 +26,8 @@ func (s State) String() string {
 		return "Saving"
 	case StateExiting:
 		return "Exiting"
+	case StateEnvVars:
+		return "EnvVars"
 	default:
 		return "Unknown"
 	}

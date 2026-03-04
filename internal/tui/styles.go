@@ -94,6 +94,31 @@ optionStyle         = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Ligh
 errorStyle          = lipgloss.NewStyle().Foreground(errorColor).Bold(true)
 
 helpStyle = lipgloss.NewStyle().Foreground(mutedColor)
+
+envVarNameStyle = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(primaryColor)
+
+envVarAliasStyle = lipgloss.NewStyle().
+	Foreground(mutedColor)
+
+envVarValueSetStyle = lipgloss.NewStyle().
+	Foreground(successColor)
+
+envVarValueUnsetStyle = lipgloss.NewStyle().
+	Foreground(mutedColor).
+	Italic(true)
+
+envVarSensitiveStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.AdaptiveColor{Light: "#D69E2E", Dark: "#F59E0B"}).
+	Bold(true)
+
+envVarQualifierStyle = lipgloss.NewStyle().
+	Foreground(mutedColor).
+	Italic(true)
+
+envVarDescStyle = lipgloss.NewStyle().
+	Foreground(lipgloss.AdaptiveColor{Light: "#2D3748", Dark: "#E2E8F0"})
 )
 
 const copilotIcon = "╭─╮╭─╮\n╰─╯╰─╯\n█ ▘▝ █\n ▔▔▔▔ "

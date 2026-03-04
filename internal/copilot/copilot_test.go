@@ -2,6 +2,7 @@ package copilot
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -294,6 +295,190 @@ func TestParseVersionMalformed(t *testing.T) {
 		_, err := ParseVersion(tc)
 		if err != ErrVersionParseFailed {
 			t.Errorf("Expected ErrVersionParseFailed for input %q, got %v", tc, err)
+		}
+	}
+}
+
+// UT-COP-010: ParseEnvVars with full fixture returns 11 entries
+func TestParseEnvVarsFullFixture(t *testing.T) {
+	data, err := os.ReadFile("testdata/copilot-help-environment.txt")
+	if err != nil {
+		t.Fatalf("Failed to read test data: %v", err)
+	}
+
+	entries, err := ParseEnvVars(string(data))
+	if err != nil {
+		t.Fatalf("ParseEnvVars failed: %v", err)
+	}
+
+	expected := 11
+	if len(entries) != expected {
+		t.Errorf("Expected %d entries, got %d", expected, len(entries))
+		for i, e := range entries {
+			t.Logf("Entry %d: Names=%v", i+1, e.Names)
+		}
+	}
+}
+
+// UT-COP-011: ParseEnvVars multi-name entry (COPILOT_EDITOR) returns 3 names
+func TestParseEnvVarsMultiName(t *testing.T) {
+	data, err := os.ReadFile("testdata/copilot-help-environment.txt")
+	if err != nil {
+		t.Fatalf("Failed to read test data: %v", err)
+	}
+
+	entries, err := ParseEnvVars(string(data))
+	if err != nil {
+		t.Fatalf("ParseEnvVars failed: %v", err)
+	}
+
+	var editorEntry *EnvVarInfo
+	for i := range entries {
+		for _, name := range entries[i].Names {
+			if name == "COPILOT_EDITOR" {
+				editorEntry = &entries[i]
+				break
+			}
+		}
+		if editorEntry != nil {
+			break
+		}
+	}
+
+	if editorEntry == nil {
+		t.Fatal("COPILOT_EDITOR entry not found")
+	}
+
+	expectedNames := []string{"COPILOT_EDITOR", "VISUAL", "EDITOR"}
+	if len(editorEntry.Names) != len(expectedNames) {
+		t.Fatalf("Expected %d names, got %d: %v", len(expectedNames), len(editorEntry.Names), editorEntry.Names)
+	}
+
+	for i, expected := range expectedNames {
+		if editorEntry.Names[i] != expected {
+			t.Errorf("Name %d: expected %q, got %q", i, expected, editorEntry.Names[i])
+		}
+	}
+}
+
+// UT-COP-012: ParseEnvVars single-name entry (COPILOT_MODEL) returns 1 name
+func TestParseEnvVarsSingleName(t *testing.T) {
+	data, err := os.ReadFile("testdata/copilot-help-environment.txt")
+	if err != nil {
+		t.Fatalf("Failed to read test data: %v", err)
+	}
+
+	entries, err := ParseEnvVars(string(data))
+	if err != nil {
+		t.Fatalf("ParseEnvVars failed: %v", err)
+	}
+
+	var modelEntry *EnvVarInfo
+	for i := range entries {
+		if len(entries[i].Names) > 0 && entries[i].Names[0] == "COPILOT_MODEL" {
+			modelEntry = &entries[i]
+			break
+		}
+	}
+
+	if modelEntry == nil {
+		t.Fatal("COPILOT_MODEL entry not found")
+	}
+
+	if len(modelEntry.Names) != 1 {
+		t.Errorf("Expected 1 name, got %d: %v", len(modelEntry.Names), modelEntry.Names)
+	}
+}
+
+// UT-COP-013: ParseEnvVars extracts qualifier "in order of precedence" for COPILOT_GITHUB_TOKEN entry
+func TestParseEnvVarsQualifier(t *testing.T) {
+	data, err := os.ReadFile("testdata/copilot-help-environment.txt")
+	if err != nil {
+		t.Fatalf("Failed to read test data: %v", err)
+	}
+
+	entries, err := ParseEnvVars(string(data))
+	if err != nil {
+		t.Fatalf("ParseEnvVars failed: %v", err)
+	}
+
+	var tokenEntry *EnvVarInfo
+	for i := range entries {
+		if len(entries[i].Names) > 0 && entries[i].Names[0] == "COPILOT_GITHUB_TOKEN" {
+			tokenEntry = &entries[i]
+			break
+		}
+	}
+
+	if tokenEntry == nil {
+		t.Fatal("COPILOT_GITHUB_TOKEN entry not found")
+	}
+
+	expectedQualifier := "in order of precedence"
+	if tokenEntry.Qualifier != expectedQualifier {
+		t.Errorf("Expected qualifier %q, got %q", expectedQualifier, tokenEntry.Qualifier)
+	}
+}
+
+// UT-COP-014: ParseEnvVars multi-line description for COPILOT_AUTO_UPDATE contains "false" and "Auto-update"
+func TestParseEnvVarsMultiLineDescription(t *testing.T) {
+	data, err := os.ReadFile("testdata/copilot-help-environment.txt")
+	if err != nil {
+		t.Fatalf("Failed to read test data: %v", err)
+	}
+
+	entries, err := ParseEnvVars(string(data))
+	if err != nil {
+		t.Fatalf("ParseEnvVars failed: %v", err)
+	}
+
+	var autoUpdateEntry *EnvVarInfo
+	for i := range entries {
+		if len(entries[i].Names) > 0 && entries[i].Names[0] == "COPILOT_AUTO_UPDATE" {
+			autoUpdateEntry = &entries[i]
+			break
+		}
+	}
+
+	if autoUpdateEntry == nil {
+		t.Fatal("COPILOT_AUTO_UPDATE entry not found")
+	}
+
+	if !strings.Contains(autoUpdateEntry.Description, "false") {
+		t.Errorf("Expected description to contain %q, got %q", "false", autoUpdateEntry.Description)
+	}
+
+	if !strings.Contains(autoUpdateEntry.Description, "Auto-update") {
+		t.Errorf("Expected description to contain %q, got %q", "Auto-update", autoUpdateEntry.Description)
+	}
+}
+
+// UT-COP-015: ParseEnvVars("") returns nil, nil
+func TestParseEnvVarsEmpty(t *testing.T) {
+	entries, err := ParseEnvVars("")
+	if err != nil {
+		t.Errorf("Expected nil error, got %v", err)
+	}
+	if entries != nil {
+		t.Errorf("Expected nil entries, got %v", entries)
+	}
+}
+
+// UT-COP-016: ParseEnvVars with malformed non-empty input returns ErrEnvVarsParseFailed
+func TestParseEnvVarsMalformed(t *testing.T) {
+	testCases := []string{
+		"no env vars here",
+		"just some random text\nwithout any backtick-quoted names",
+		"Environment Variables:\n\n  nothing useful here\n",
+	}
+
+	for _, tc := range testCases {
+		entries, err := ParseEnvVars(tc)
+		if err != ErrEnvVarsParseFailed {
+			t.Errorf("Expected ErrEnvVarsParseFailed for input %q, got err=%v, entries=%v", tc, err, entries)
+		}
+		if entries != nil {
+			t.Errorf("Expected nil entries for input %q, got %v", tc, entries)
 		}
 	}
 }

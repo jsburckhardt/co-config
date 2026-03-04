@@ -200,3 +200,51 @@ func TestMaskValue_OtherTypes(t *testing.T) {
 		t.Errorf("Expected '%s' for nil, got: %s", expected, result)
 	}
 }
+
+// UT-SEN-014: IsEnvVarSensitive returns true for COPILOT_GITHUB_TOKEN
+func TestIsEnvVarSensitive_CopilotGithubToken(t *testing.T) {
+	if !IsEnvVarSensitive("COPILOT_GITHUB_TOKEN") {
+		t.Error("Expected COPILOT_GITHUB_TOKEN to be sensitive")
+	}
+}
+
+// UT-SEN-015: IsEnvVarSensitive returns true for GH_TOKEN
+func TestIsEnvVarSensitive_GhToken(t *testing.T) {
+	if !IsEnvVarSensitive("GH_TOKEN") {
+		t.Error("Expected GH_TOKEN to be sensitive")
+	}
+}
+
+// UT-SEN-016: IsEnvVarSensitive returns true for GITHUB_TOKEN
+func TestIsEnvVarSensitive_GithubToken(t *testing.T) {
+	if !IsEnvVarSensitive("GITHUB_TOKEN") {
+		t.Error("Expected GITHUB_TOKEN to be sensitive")
+	}
+}
+
+// UT-SEN-017: IsEnvVarSensitive is case-insensitive
+func TestIsEnvVarSensitive_CaseInsensitive(t *testing.T) {
+	if !IsEnvVarSensitive("copilot_github_token") {
+		t.Error("Expected lowercase 'copilot_github_token' to be sensitive")
+	}
+	if !IsEnvVarSensitive("Gh_Token") {
+		t.Error("Expected mixed case 'Gh_Token' to be sensitive")
+	}
+}
+
+// UT-SEN-018: IsEnvVarSensitive returns false for non-sensitive names
+func TestIsEnvVarSensitive_NonSensitive(t *testing.T) {
+	nonSensitive := []string{"COPILOT_MODEL", "XDG_CONFIG_HOME", "COPILOT_ALLOW_ALL", "PATH"}
+	for _, name := range nonSensitive {
+		if IsEnvVarSensitive(name) {
+			t.Errorf("Expected %q to NOT be sensitive", name)
+		}
+	}
+}
+
+// UT-SEN-019: IsEnvVarSensitive returns false for empty string
+func TestIsEnvVarSensitive_EmptyString(t *testing.T) {
+	if IsEnvVarSensitive("") {
+		t.Error("Expected empty string to NOT be sensitive")
+	}
+}
