@@ -26,6 +26,7 @@ state        State
 listPanel    *ListPanel
 detailPanel  DetailPanel
 envPanel     *EnvVarsPanel
+modelPickerPanel *ModelPickerPanel
 keys         KeyMap
 
 windowWidth  int
@@ -166,6 +167,9 @@ return m.handleKeyPress(msg)
 if m.state == StateEditing {
 return m, m.detailPanel.Update(msg)
 }
+if m.state == StateModelPicker && m.modelPickerPanel != nil {
+return m, m.modelPickerPanel.Update(msg)
+}
 return m, nil
 }
 
@@ -191,6 +195,19 @@ m.listPanel.Down()
 m.syncDetailPanel()
 case "enter":
 if item := m.listPanel.SelectedItem(); item != nil && !isSensitiveItem(*item) {
+// Route large enums to the filterable model picker
+if item.Field.Type == "enum" && len(item.Field.Options) >= 5 {
+current := ""
+if s, ok := item.Value.(string); ok {
+current = s
+}
+picker := NewModelPickerPanel(item.Field.Options, current)
+m.modelPickerPanel = &picker
+m.updateSizes()
+m.state = StateModelPicker
+slog.Info("model picker opened", "field", item.Field.Name)
+return m, nil
+}
 m.state = StateEditing
 slog.Info("editing", "field", item.Field.Name)
 return m, m.detailPanel.StartEditing()
@@ -216,6 +233,40 @@ return m, m.detailPanel.Update(msg)
 default:
 // All other keys go to detail panel
 return m, m.detailPanel.Update(msg)
+}
+case StateModelPicker:
+if m.modelPickerPanel == nil {
+m.state = StateBrowsing
+return m, nil
+}
+switch k {
+case "ctrl+s":
+m.saveConfig()
+case "enter":
+newValue := m.modelPickerPanel.SelectedValue()
+if item := m.listPanel.SelectedItem(); item != nil {
+m.cfg.Set(item.Field.Name, newValue)
+m.listPanel.UpdateItemValue(item.Field.Name, newValue)
+m.detailPanel.SetField(item.Field, newValue)
+slog.Info("model picker confirmed", "field", item.Field.Name, "value", newValue)
+}
+m.modelPickerPanel = nil
+m.state = StateBrowsing
+return m, nil
+case "esc":
+newValue := m.modelPickerPanel.SelectedValue()
+if item := m.listPanel.SelectedItem(); item != nil {
+m.cfg.Set(item.Field.Name, newValue)
+m.listPanel.UpdateItemValue(item.Field.Name, newValue)
+m.detailPanel.SetField(item.Field, newValue)
+slog.Info("model picker confirmed via esc", "field", item.Field.Name, "value", newValue)
+}
+m.modelPickerPanel = nil
+m.state = StateBrowsing
+return m, nil
+default:
+// Forward all other keys to the picker
+return m, m.modelPickerPanel.Update(msg)
 }
 case StateEnvVars:
 switch k {
@@ -374,6 +425,19 @@ if envPanelH < 1 {
 envPanelH = 1
 }
 m.envPanel.SetSize(envPanelW, envPanelH)
+
+// Model picker sizing
+if m.modelPickerPanel != nil {
+pickerW := innerWidth - 4
+pickerH := panelHeight - 2
+if pickerW < 1 {
+pickerW = 1
+}
+if pickerH < 1 {
+pickerH = 1
+}
+m.modelPickerPanel.SetSize(pickerW, pickerH)
+}
 }
 
 // View renders the model.
@@ -416,6 +480,12 @@ Width(innerWidth - 4).
 Height(panelHeight - 2).
 Render(envContent)
 panels = envPanelRendered
+} else if m.state == StateModelPicker && m.modelPickerPanel != nil {
+pickerContent := m.modelPickerPanel.View()
+panels = focusedPanelStyle.
+Width(innerWidth - 4).
+Height(panelHeight - 2).
+Render(pickerContent)
 } else {
 listContent := m.listPanel.View()
 detailContent := m.detailPanel.View()
@@ -475,6 +545,8 @@ return []key.Binding{k.Confirm, k.Escape, k.Save, k.Quit}
 return []key.Binding{k.Escape, k.Save, k.Quit}
 case StateEnvVars:
 return []key.Binding{k.Up, k.Down, k.Left, k.Tab, k.Quit}
+case StateModelPicker:
+return []key.Binding{k.Filter, k.Enter, k.Escape, k.Save, k.Quit}
 default:
 return []key.Binding{k.Quit}
 }
