@@ -254,8 +254,8 @@ Created the `release-please.yml` GitHub Actions workflow for automated semantic 
 - **Triggers** on `push` to `main` branch only — matching CC-0006 specification.
 - **Top-level permissions** set to `{}` (empty) for least privilege at the workflow level, per CC-0006 rule: "Set permissions per-job, never globally at the workflow level."
 - **Job-level permissions**: `contents: write`, `pull-requests: write` — exactly matching CC-0006 specification.
-- **Single step** using `google-github-actions/release-please-action` pinned to full 40-character commit SHA with version comment (decision #33):
-  - `google-github-actions/release-please-action@e4dc86ba9405554aeba3c6bb2d169f670a8cb04a # v4`
+- **Single step** using `googleapis/release-please-action` pinned to full 40-character commit SHA with version comment (decision #33):
+  - `googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0`
   - Configured with `config-file: release-please-config.json` and `manifest-file: .release-please-manifest.json` to read the release-please configuration files created in Task 1.3.
 
 ### Test Results

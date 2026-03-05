@@ -674,7 +674,7 @@ Tests are ordered by task dependency. Static validations (which can run locally)
 2. Verify the action reference contains a 40-character hex SHA
 
 ### Expected Result
-- `google-github-actions/release-please-action` is pinned to a full commit SHA
+- `googleapis/release-please-action` is pinned to a full commit SHA
 - A version comment is present (e.g., `# v4`)
 
 ---
