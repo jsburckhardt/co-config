@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.2](https://github.com/jsburckhardt/co-config/compare/v0.1.1...v0.1.2) (2026-03-05)
+
+
+### Bug Fixes
+
+* **ci:** chain GoReleaser into release-please workflow ([1cb7016](https://github.com/jsburckhardt/co-config/commit/1cb7016d9f0ee4f39aceba6ca624225a95914cb6))
+* **ci:** chain GoReleaser into release-please workflow (WI-0008) ([afdfb15](https://github.com/jsburckhardt/co-config/commit/afdfb1536b83777b6a92a6858b998e64f938371f))
+
 ## [0.1.1](https://github.com/jsburckhardt/co-config/compare/v0.1.0...v0.1.1) (2026-03-05)
 
 
