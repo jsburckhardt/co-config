@@ -443,7 +443,7 @@ Merge to main
 ┌──────────────────────────────────────────────────────────────┐
 │                    release-please.yml                         │
 │                                                              │
-│  google-github-actions/release-please-action                 │
+│  googleapis/release-please-action                 │
 │    ├── Parses conventional commits since last release         │
 │    │   fix: → patch, feat: → minor, feat!: → major           │
 │    ├── Opens/updates a "Release PR" with:                     │
@@ -497,7 +497,7 @@ The project already mandates **Conventional Commits** (enforced by the ship-it a
 **Why release-please over alternatives:**
 - **vs semantic-release:** release-please is a two-step process (PR then merge) giving human review before release; semantic-release publishes immediately on merge
 - **vs manual tagging:** eliminates human error in version calculation; changelog is always up to date
-- **Native GitHub Action:** `google-github-actions/release-please-action` — well-maintained, widely used in Go ecosystem
+- **Native GitHub Action:** `googleapis/release-please-action` — well-maintained, widely used in Go ecosystem
 - **release-type: `go`:** has native support for Go modules (updates `go.mod` if needed)
 
 ---

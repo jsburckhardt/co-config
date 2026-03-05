@@ -407,14 +407,14 @@ Create the release-please workflow that runs on pushes to `main` and manages aut
 **Single job with permissions:** `contents: write`, `pull-requests: write`
 
 **Steps:**
-1. `google-github-actions/release-please-action` (pinned SHA) with `manifest: true` (reads `.release-please-manifest.json` and `release-please-config.json`)
+1. `googleapis/release-please-action` (pinned SHA) with `manifest: true` (reads `.release-please-manifest.json` and `release-please-config.json`)
 
 ### Acceptance Criteria
 
 - [ ] `.github/workflows/release-please.yml` exists
 - [ ] Workflow triggers only on `push` to `main`
 - [ ] Permissions are set per-job: `contents: write`, `pull-requests: write`
-- [ ] Uses `google-github-actions/release-please-action` with `manifest: true`
+- [ ] Uses `googleapis/release-please-action` with `manifest: true`
 - [ ] Action is pinned to a full commit SHA with version comment
 - [ ] YAML syntax is valid
 

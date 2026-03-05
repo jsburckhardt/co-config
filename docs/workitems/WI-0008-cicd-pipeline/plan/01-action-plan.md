@@ -108,7 +108,7 @@ All workflows must pin actions to full commit SHAs with version comments.
 - **Triggers:** `push` to `main`
 - **Permissions:** `contents: write`, `pull-requests: write`
 - **Steps:**
-  - `google-github-actions/release-please-action` (pinned to SHA)
+  - `googleapis/release-please-action` (pinned to SHA)
   - Config: `manifest: true` (uses `.release-please-manifest.json` + `release-please-config.json`)
 - **Dependency:** release-please config files (Task 1.3) must exist
 - **Validation:** Merge a conventional commit to `main` and verify Release PR is created
