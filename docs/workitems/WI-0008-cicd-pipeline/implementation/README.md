@@ -1,5 +1,23 @@
 # WI-0008: CI/CD Pipeline — Implementation Notes
 
+## Post-Implementation Errata
+
+### Workflow Consolidation (release.yml → release-please.yml)
+
+The original plan called for 4 separate workflows including a standalone `release.yml` triggered by `push tags: v*`. This design failed because tags created by release-please using `GITHUB_TOKEN` do not trigger `push` events (GitHub's anti-cascade protection).
+
+**Fix:** The GoReleaser release job was moved into `release-please.yml` as a dependent `goreleaser` job that runs when `release_created == true`. The standalone `release.yml` was deleted. The project now has **3 workflows**: `ci.yml`, `govulncheck.yml`, and `release-please.yml`.
+
+### Install Script Archive Naming
+
+The install script originally used `ccc_<os>_<arch>.tar.gz` (binary name) but GoReleaser's `{{ .ProjectName }}` resolves to `co-config` (the Go module name), producing `co-config_<os>_<arch>.tar.gz`. The script was updated to use `PROJECT_NAME="co-config"` for archive naming.
+
+### Action Org Migration
+
+`google-github-actions/release-please-action` is archived. The canonical repo is `googleapis/release-please-action`. All references updated.
+
+---
+
 ## Task 1.1: Create `.golangci.yml` Linter Configuration
 
 - **Status:** Complete
