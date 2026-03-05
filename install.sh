@@ -9,6 +9,7 @@ set -e
 # ── Constants ────────────────────────────────────────────────────────────────
 
 REPO="jsburckhardt/co-config"
+PROJECT_NAME="co-config"
 BINARY_NAME="ccc"
 GITHUB_API="https://api.github.com/repos/${REPO}/releases"
 GITHUB_DOWNLOAD="https://github.com/${REPO}/releases/download"
@@ -106,7 +107,7 @@ resolve_version() {
 # ── Download & Verify ────────────────────────────────────────────────────────
 
 download_and_verify() {
-  ARCHIVE_NAME="${BINARY_NAME}_${OS}_${ARCH}.tar.gz"
+  ARCHIVE_NAME="${PROJECT_NAME}_${OS}_${ARCH}.tar.gz"
   CHECKSUMS_NAME="checksums.txt"
   DOWNLOAD_BASE="${GITHUB_DOWNLOAD}/${VERSION}"
 
