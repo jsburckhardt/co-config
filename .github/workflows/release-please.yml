@@ -1,0 +1,22 @@
+name: release-please
+
+on:
+  push:
+    branches:
+      - main
+
+# Least privilege at workflow level — permissions are set per-job
+permissions: {}
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Run release-please
+        uses: google-github-actions/release-please-action@e4dc86ba9405554aeba3c6bb2d169f670a8cb04a # v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
