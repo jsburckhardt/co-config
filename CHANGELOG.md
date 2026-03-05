@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3](https://github.com/jsburckhardt/co-config/compare/v0.1.2...v0.1.3) (2026-03-05)
+
+
+### Bug Fixes
+
+* correct install script archive naming and update WI-0008 docs ([6c8c0fb](https://github.com/jsburckhardt/co-config/commit/6c8c0fb87dc54894a444ac8e91492e2c26df05c6))
+* correct install script archive naming and update WI-0008 docs ([6cdf345](https://github.com/jsburckhardt/co-config/commit/6cdf345f8f62eafdb774db1d4e9baaff13ae2477))
+
 ## [0.1.2](https://github.com/jsburckhardt/co-config/compare/v0.1.1...v0.1.2) (2026-03-05)
 
 
