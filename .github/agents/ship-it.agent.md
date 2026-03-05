@@ -18,9 +18,14 @@ target: vscode
 ---
 
 <instructions>
-You MUST run the project test suite and confirm all tests pass before proceeding with any git operations.
+You MUST run the full CI validation pipeline locally before proceeding with any git operations.
 You MUST detect the test runner automatically by inspecting project files (go.mod, package.json, pytest.ini, pyproject.toml, Makefile, etc.).
-You MUST NOT proceed if any test fails; stop immediately and report the failures.
+You MUST run the linter (golangci-lint run ./...) and confirm zero violations before proceeding.
+You MUST run go vet ./... and confirm zero issues before proceeding.
+You MUST run the formatting check (gofmt -l .) and confirm no files need formatting before proceeding.
+You MUST run go mod tidy and confirm go.mod and go.sum are unchanged (git diff --exit-code go.mod go.sum) before proceeding.
+You MUST run the project test suite with the race detector (go test -race ./...) and confirm all tests pass before proceeding.
+You MUST NOT proceed if any validation step fails; stop immediately and report the failures with the specific step that failed.
 You MUST check the current git branch before making changes.
 You MUST NOT push directly to main or master; always work on a feature branch.
 You MUST create a feature branch following the pattern <type>/<WI-ID>-<short-slug> (e.g., feat/WI-0002-readme-cleanup, fix/WI-0012-auth-bug) when on main or master, where <type> is a Conventional Commits type derived from the work being shipped.
@@ -58,7 +63,7 @@ PROTECTED_BRANCHES: YAML<<
 >>
 TEST_RUNNER_SIGNALS: YAML<<
 - file: go.mod
-  command: go test ./...
+  command: go test -race ./...
 - file: package.json
   command: npm test
 - file: pytest.ini
@@ -67,6 +72,21 @@ TEST_RUNNER_SIGNALS: YAML<<
   command: pytest
 - file: Makefile
   command: make test
+>>
+CI_VALIDATION_STEPS: YAML<<
+- name: lint
+  command: golangci-lint run ./...
+  signal: .golangci.yml
+- name: vet
+  command: go vet ./...
+  signal: go.mod
+- name: fmt-check
+  command: "gofmt -l ."
+  signal: go.mod
+  expect_empty: true
+- name: tidy-check
+  command: "go mod tidy && git diff --exit-code go.mod go.sum"
+  signal: go.mod
 >>
 </constants>
 
@@ -126,6 +146,11 @@ CURRENT_BRANCH: ""
 TEST_RUNNER: ""
 TEST_OUTPUT: ""
 TEST_PASSED: false
+CI_LINT_PASSED: false
+CI_VET_PASSED: false
+CI_FMT_PASSED: false
+CI_TIDY_PASSED: false
+CI_VALIDATION_OUTPUT: ""
 CHANGED_FILES: []
 COMMITS: []
 PR_URL: ""
@@ -142,6 +167,9 @@ GH_AUTHENTICATED: false
 <processes>
 <process id="ship-router" name="Route shipping request">
 RUN `detect-context`
+RUN `run-ci-validation`
+IF CI_LINT_PASSED is false or CI_VET_PASSED is false or CI_FMT_PASSED is false or CI_TIDY_PASSED is false:
+  RETURN: format="SHIP_ERROR", wi_id=WI_ID, stage="CI Validation", error_message="CI validation failed", details=CI_VALIDATION_OUTPUT, fix="Fix all linter, vet, formatting, and tidy issues before shipping"
 RUN `run-tests`
 IF TEST_PASSED is false:
   RETURN: format="SHIP_ERROR", wi_id=WI_ID, stage="Tests", error_message="Test suite failed", details=TEST_OUTPUT, fix="Fix failing tests before shipping"
@@ -170,10 +198,37 @@ CAPTURE PROJECT_FILES from `search/fileSearch`
 SET TEST_RUNNER := <COMMAND> (from "Agent Inference" using PROJECT_FILES, TEST_RUNNER_SIGNALS)
 </process>
 
-<process id="run-tests" name="Execute the project test suite">
+<process id="run-tests" name="Execute the project test suite with race detector">
 USE `execute/runInTerminal` where: command=TEST_RUNNER
 CAPTURE TEST_OUTPUT from `execute/runInTerminal`
 SET TEST_PASSED := <RESULT> (from "Agent Inference" using TEST_OUTPUT)
+</process>
+
+<process id="run-ci-validation" name="Run lint, vet, fmt-check, and tidy-check locally before committing">
+USE `execute/runInTerminal` where: command="golangci-lint run ./..."
+CAPTURE LINT_OUTPUT from `execute/runInTerminal`
+SET CI_LINT_PASSED := <RESULT> (from "Agent Inference" using LINT_OUTPUT)
+IF CI_LINT_PASSED is false:
+  SET CI_VALIDATION_OUTPUT := "lint failed:\n" + LINT_OUTPUT (from "Agent Inference")
+  RETURN
+USE `execute/runInTerminal` where: command="go vet ./..."
+CAPTURE VET_OUTPUT from `execute/runInTerminal`
+SET CI_VET_PASSED := <RESULT> (from "Agent Inference" using VET_OUTPUT)
+IF CI_VET_PASSED is false:
+  SET CI_VALIDATION_OUTPUT := "vet failed:\n" + VET_OUTPUT (from "Agent Inference")
+  RETURN
+USE `execute/runInTerminal` where: command="gofmt -l ."
+CAPTURE FMT_OUTPUT from `execute/runInTerminal`
+SET CI_FMT_PASSED := <RESULT> (from "Agent Inference" using FMT_OUTPUT)
+IF CI_FMT_PASSED is false:
+  SET CI_VALIDATION_OUTPUT := "fmt-check failed — files need formatting:\n" + FMT_OUTPUT (from "Agent Inference")
+  RETURN
+USE `execute/runInTerminal` where: command="go mod tidy && git diff --exit-code go.mod go.sum"
+CAPTURE TIDY_OUTPUT from `execute/runInTerminal`
+SET CI_TIDY_PASSED := <RESULT> (from "Agent Inference" using TIDY_OUTPUT)
+IF CI_TIDY_PASSED is false:
+  SET CI_VALIDATION_OUTPUT := "tidy-check failed — go.mod or go.sum changed:\n" + TIDY_OUTPUT (from "Agent Inference")
+  RETURN
 </process>
 
 <process id="check-gh-auth" name="Verify GitHub CLI authentication">

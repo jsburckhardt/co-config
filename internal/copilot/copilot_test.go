@@ -12,12 +12,12 @@ func TestParseVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read test data: %v", err)
 	}
-	
+
 	version, err := ParseVersion(string(data))
 	if err != nil {
 		t.Fatalf("ParseVersion failed: %v", err)
 	}
-	
+
 	expected := "0.0.412"
 	if version != expected {
 		t.Errorf("Expected version %q, got %q", expected, version)
@@ -30,12 +30,12 @@ func TestParseSchemaFieldCount(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read test data: %v", err)
 	}
-	
+
 	fields, err := ParseSchema(string(data))
 	if err != nil {
 		t.Fatalf("ParseSchema failed: %v", err)
 	}
-	
+
 	minExpected := 15
 	if len(fields) < minExpected {
 		t.Errorf("Expected at least %d fields, got %d", minExpected, len(fields))
@@ -43,19 +43,19 @@ func TestParseSchemaFieldCount(t *testing.T) {
 			t.Logf("Field %d: %s (type: %s)", i+1, f.Name, f.Type)
 		}
 	}
-	
+
 	// Verify key representative fields exist with expected types
 	expectedFields := map[string]string{
 		"model":        "enum",
 		"theme":        "enum",
 		"allowed_urls": "list",
 	}
-	
+
 	fieldMap := make(map[string]*SchemaField)
 	for i := range fields {
 		fieldMap[fields[i].Name] = &fields[i]
 	}
-	
+
 	for name, expectedType := range expectedFields {
 		field, exists := fieldMap[name]
 		if !exists {
@@ -74,12 +74,12 @@ func TestParseSchemaBoolField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read test data: %v", err)
 	}
-	
+
 	fields, err := ParseSchema(string(data))
 	if err != nil {
 		t.Fatalf("ParseSchema failed: %v", err)
 	}
-	
+
 	var altScreen *SchemaField
 	for i := range fields {
 		if fields[i].Name == "alt_screen" {
@@ -87,15 +87,15 @@ func TestParseSchemaBoolField(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if altScreen == nil {
 		t.Fatal("alt_screen field not found")
 	}
-	
+
 	if altScreen.Type != "bool" {
 		t.Errorf("Expected Type %q, got %q", "bool", altScreen.Type)
 	}
-	
+
 	if altScreen.Default != "false" {
 		t.Errorf("Expected Default %q, got %q", "false", altScreen.Default)
 	}
@@ -107,12 +107,12 @@ func TestParseSchemaBannerField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read test data: %v", err)
 	}
-	
+
 	fields, err := ParseSchema(string(data))
 	if err != nil {
 		t.Fatalf("ParseSchema failed: %v", err)
 	}
-	
+
 	var banner *SchemaField
 	for i := range fields {
 		if fields[i].Name == "banner" {
@@ -120,20 +120,20 @@ func TestParseSchemaBannerField(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if banner == nil {
 		t.Fatal("banner field not found")
 	}
-	
+
 	if banner.Type != "enum" {
 		t.Errorf("Expected Type %q, got %q", "enum", banner.Type)
 	}
-	
+
 	expectedOptions := []string{"always", "never", "once"}
 	if len(banner.Options) != len(expectedOptions) {
 		t.Errorf("Expected %d options, got %d", len(expectedOptions), len(banner.Options))
 	}
-	
+
 	for i, expected := range expectedOptions {
 		if i >= len(banner.Options) {
 			break
@@ -150,12 +150,12 @@ func TestParseSchemaModelField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read test data: %v", err)
 	}
-	
+
 	fields, err := ParseSchema(string(data))
 	if err != nil {
 		t.Fatalf("ParseSchema failed: %v", err)
 	}
-	
+
 	var model *SchemaField
 	for i := range fields {
 		if fields[i].Name == "model" {
@@ -163,15 +163,15 @@ func TestParseSchemaModelField(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if model == nil {
 		t.Fatal("model field not found")
 	}
-	
+
 	if model.Type != "enum" {
 		t.Errorf("Expected Type %q, got %q", "enum", model.Type)
 	}
-	
+
 	expected := 17
 	if len(model.Options) != expected {
 		t.Errorf("Expected %d options, got %d", expected, len(model.Options))
@@ -187,12 +187,12 @@ func TestParseSchemaThemeField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read test data: %v", err)
 	}
-	
+
 	fields, err := ParseSchema(string(data))
 	if err != nil {
 		t.Fatalf("ParseSchema failed: %v", err)
 	}
-	
+
 	var theme *SchemaField
 	for i := range fields {
 		if fields[i].Name == "theme" {
@@ -200,20 +200,20 @@ func TestParseSchemaThemeField(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if theme == nil {
 		t.Fatal("theme field not found")
 	}
-	
+
 	if theme.Type != "enum" {
 		t.Errorf("Expected Type %q, got %q", "enum", theme.Type)
 	}
-	
+
 	expectedOptions := []string{"auto", "dark", "light"}
 	if len(theme.Options) != len(expectedOptions) {
 		t.Errorf("Expected %d options, got %d", len(expectedOptions), len(theme.Options))
 	}
-	
+
 	for i, expected := range expectedOptions {
 		if i >= len(theme.Options) {
 			break
@@ -230,12 +230,12 @@ func TestParseSchemaListField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read test data: %v", err)
 	}
-	
+
 	fields, err := ParseSchema(string(data))
 	if err != nil {
 		t.Fatalf("ParseSchema failed: %v", err)
 	}
-	
+
 	var allowedURLs *SchemaField
 	for i := range fields {
 		if fields[i].Name == "allowed_urls" {
@@ -243,11 +243,11 @@ func TestParseSchemaListField(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if allowedURLs == nil {
 		t.Fatal("allowed_urls field not found")
 	}
-	
+
 	if allowedURLs.Type != "list" {
 		t.Errorf("Expected Type %q, got %q", "list", allowedURLs.Type)
 	}
@@ -259,12 +259,12 @@ func TestParseSchemaStringField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read test data: %v", err)
 	}
-	
+
 	fields, err := ParseSchema(string(data))
 	if err != nil {
 		t.Fatalf("ParseSchema failed: %v", err)
 	}
-	
+
 	var logLevel *SchemaField
 	for i := range fields {
 		if fields[i].Name == "log_level" {
@@ -272,11 +272,11 @@ func TestParseSchemaStringField(t *testing.T) {
 			break
 		}
 	}
-	
+
 	if logLevel == nil {
 		t.Fatal("log_level field not found")
 	}
-	
+
 	if logLevel.Default != "default" {
 		t.Errorf("Expected Default %q, got %q", "default", logLevel.Default)
 	}
@@ -290,7 +290,7 @@ func TestParseVersionMalformed(t *testing.T) {
 		"GitHub Copilot CLI",
 		"Version 1.2.3",
 	}
-	
+
 	for _, tc := range testCases {
 		_, err := ParseVersion(tc)
 		if err != ErrVersionParseFailed {

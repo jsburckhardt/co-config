@@ -58,7 +58,7 @@ func DefaultPath() string {
 
 // LoadConfig reads and parses the config file at the given path.
 func LoadConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(path) //nolint:gosec // path is user-provided config file path, not attacker-controlled
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("%w: %s", ErrConfigNotFound, path)
@@ -83,7 +83,7 @@ func SaveConfig(path string, cfg *Config) error {
 	data = append(data, '\n')
 
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return fmt.Errorf("creating config directory: %w", err)
 	}
 

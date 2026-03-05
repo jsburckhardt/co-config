@@ -22,7 +22,7 @@ func DetectVersion() (string, error) {
 	if _, err := exec.LookPath("copilot"); err != nil {
 		return "", ErrCopilotNotInstalled
 	}
-	
+
 	cmd := exec.Command("copilot", "version")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -71,7 +71,7 @@ func DetectSchema() ([]SchemaField, error) {
 	if _, err := exec.LookPath("copilot"); err != nil {
 		return nil, ErrCopilotNotInstalled
 	}
-	
+
 	cmd := exec.Command("copilot", "help", "config")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -83,38 +83,38 @@ func DetectSchema() ([]SchemaField, error) {
 // ParseSchema parses the schema from copilot help config output
 func ParseSchema(output string) ([]SchemaField, error) {
 	var fields []SchemaField
-	
+
 	lines := strings.Split(output, "\n")
-	
+
 	// Pattern to match field name: `field_name`:
 	fieldPattern := regexp.MustCompile(`^\s*` + "`" + `([^` + "`" + `]+)` + "`" + `:(.*)$`)
 	// Pattern to match default value: defaults to `value` or defaults to "value"
 	defaultPattern := regexp.MustCompile(`defaults to (?:` + "`" + `([^` + "`" + `]*)` + "`" + `|"([^"]*)")`)
 	// Pattern to match enum options: - "option"
 	optionPattern := regexp.MustCompile(`^\s*-\s+"([^"]+)"`)
-	
+
 	var currentField *SchemaField
-	
+
 	for i := 0; i < len(lines); i++ {
 		line := lines[i]
-		
+
 		// Check if this is a new field
 		if matches := fieldPattern.FindStringSubmatch(line); matches != nil {
 			// Save the previous field if exists
 			if currentField != nil {
 				fields = append(fields, *currentField)
 			}
-			
+
 			// Start a new field
 			fieldName := matches[1]
 			descriptionStart := strings.TrimSpace(matches[2])
-			
+
 			currentField = &SchemaField{
 				Name:        fieldName,
 				Description: descriptionStart,
 				Options:     []string{},
 			}
-			
+
 			// Extract default value from the first line if present
 			if defaultMatches := defaultPattern.FindStringSubmatch(descriptionStart); defaultMatches != nil {
 				// Group 1 is for backtick defaults, group 2 is for quote defaults
@@ -124,7 +124,7 @@ func ParseSchema(output string) ([]SchemaField, error) {
 					currentField.Default = defaultMatches[2]
 				}
 			}
-			
+
 			// Determine initial type based on description
 			lowerDesc := strings.ToLower(descriptionStart)
 			if strings.HasPrefix(lowerDesc, "list of") {
@@ -135,7 +135,7 @@ func ParseSchema(output string) ([]SchemaField, error) {
 		} else if currentField != nil {
 			// Continue processing the current field
 			trimmedLine := strings.TrimSpace(line)
-			
+
 			// Check for enum options
 			if optionMatches := optionPattern.FindStringSubmatch(line); optionMatches != nil {
 				currentField.Options = append(currentField.Options, optionMatches[1])
@@ -149,7 +149,7 @@ func ParseSchema(output string) ([]SchemaField, error) {
 					currentField.Description += " "
 				}
 				currentField.Description += trimmedLine
-				
+
 				// Check for default value in continuation lines
 				if currentField.Default == "" {
 					if defaultMatches := defaultPattern.FindStringSubmatch(trimmedLine); defaultMatches != nil {
@@ -164,21 +164,21 @@ func ParseSchema(output string) ([]SchemaField, error) {
 			}
 		}
 	}
-	
+
 	// Save the last field
 	if currentField != nil {
 		fields = append(fields, *currentField)
 	}
-	
+
 	// Post-process fields to finalize types
 	for i := range fields {
 		field := &fields[i]
-		
+
 		// If type is still not set, default to string
 		if field.Type == "" {
 			field.Type = "string"
 		}
-		
+
 		// If we detected enum options but type wasn't set, it's an enum
 		if len(field.Options) > 0 && field.Type != "enum" {
 			field.Type = "enum"
@@ -190,11 +190,11 @@ func ParseSchema(output string) ([]SchemaField, error) {
 			field.Type = "enum"
 		}
 	}
-	
+
 	if len(fields) == 0 {
 		return nil, ErrSchemaParseFailed
 	}
-	
+
 	return fields, nil
 }
 
@@ -250,16 +250,18 @@ func ParseEnvVars(output string) ([]EnvVarInfo, error) {
 		// We need to find the colon that is NOT inside backticks
 		inBacktick := false
 		inParen := false
+	colonLoop:
 		for j := 0; j < len(trimmed); j++ {
-			if trimmed[j] == '`' {
+			switch {
+			case trimmed[j] == '`':
 				inBacktick = !inBacktick
-			} else if trimmed[j] == '(' && !inBacktick {
+			case trimmed[j] == '(' && !inBacktick:
 				inParen = true
-			} else if trimmed[j] == ')' && !inBacktick {
+			case trimmed[j] == ')' && !inBacktick:
 				inParen = false
-			} else if trimmed[j] == ':' && !inBacktick && !inParen {
+			case trimmed[j] == ':' && !inBacktick && !inParen:
 				colonIdx = j
-				break
+				break colonLoop
 			}
 		}
 

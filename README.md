@@ -1,17 +1,64 @@
 # ccc — Copilot Config CLI
 
+[![CI](https://github.com/jsburckhardt/co-config/actions/workflows/ci.yml/badge.svg)](https://github.com/jsburckhardt/co-config/actions/workflows/ci.yml)
+[![govulncheck](https://github.com/jsburckhardt/co-config/actions/workflows/govulncheck.yml/badge.svg)](https://github.com/jsburckhardt/co-config/actions/workflows/govulncheck.yml)
+
 A TUI tool to interactively configure and view GitHub Copilot CLI settings.
 
 `ccc` reads your `~/.copilot/config.json`, auto-detects the installed Copilot CLI version and available config keys, and presents them in a beautiful terminal UI for editing. Sensitive fields (tokens, credentials) are masked and read-only.
 
-## Quick Start
+## Installation
+
+### Quick install (curl)
 
 ```bash
-# Install
-go install github.com/jsburckhardt/co-config@latest
+curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.sh | sh
+```
 
-# Run
+### Version-pinned install
+
+```bash
+curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.sh | sh -s -- --version v1.0.0
+```
+
+### Go install
+
+```bash
+go install github.com/jsburckhardt/co-config/cmd/ccc@latest
+```
+
+### Build from source
+
+```bash
+git clone https://github.com/jsburckhardt/co-config.git
+cd co-config
+go build -o ccc ./cmd/ccc
+```
+
+### Run
+
+```bash
 ccc
+```
+
+## Verify Release Artifacts
+
+### SHA256 checksum verification
+
+Download the `checksums.txt` file from the GitHub Release, then verify:
+
+```bash
+sha256sum --check checksums.txt
+```
+
+### cosign signature verification
+
+```bash
+cosign verify-blob \
+  --certificate-identity-regexp='github.com/jsburckhardt/co-config' \
+  --certificate-oidc-issuer='https://token.actions.githubusercontent.com' \
+  checksums.txt \
+  --bundle checksums.txt.bundle
 ```
 
 ## Features

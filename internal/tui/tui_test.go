@@ -1,498 +1,498 @@
 package tui
 
 import (
-"fmt"
-"os"
-"path/filepath"
-"strings"
-"testing"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
 
-tea "github.com/charmbracelet/bubbletea"
-"github.com/charmbracelet/bubbles/key"
-"github.com/jsburckhardt/co-config/internal/config"
-"github.com/jsburckhardt/co-config/internal/copilot"
+	"github.com/charmbracelet/bubbles/key"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/jsburckhardt/co-config/internal/config"
+	"github.com/jsburckhardt/co-config/internal/copilot"
 )
 
 // UT-TUI-001: NewModel creates a valid model with two-panel layout
 func TestNewModel(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}, Description: "AI model"},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}, Description: "AI model"},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
 
-if model.cfg != cfg {
-t.Error("NewModel did not store config correctly")
-}
-if model.version != "0.0.412" {
-t.Error("NewModel did not store version correctly")
-}
-if model.configPath != "/tmp/config.json" {
-t.Error("NewModel did not store configPath correctly")
-}
-if model.state != StateBrowsing {
-t.Error("NewModel should start in Browsing state")
-}
+	if model.cfg != cfg {
+		t.Error("NewModel did not store config correctly")
+	}
+	if model.version != "0.0.412" {
+		t.Error("NewModel did not store version correctly")
+	}
+	if model.configPath != "/tmp/config.json" {
+		t.Error("NewModel did not store configPath correctly")
+	}
+	if model.state != StateBrowsing {
+		t.Error("NewModel should start in Browsing state")
+	}
 }
 
 // UT-TUI-002: State machine initialization starts in Browsing state
 func TestStateMachineInitialization(t *testing.T) {
-cfg := config.NewConfig()
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-}
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
 
-if model.state != StateBrowsing {
-t.Errorf("Expected initial state Browsing, got %v", model.state)
-}
+	if model.state != StateBrowsing {
+		t.Errorf("Expected initial state Browsing, got %v", model.state)
+	}
 }
 
 // UT-TUI-003: List population from schema with all field types
 func TestListPopulation(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("test_string", "value")
-cfg.Set("test_bool", true)
-cfg.Set("test_enum", "option1")
-cfg.Set("test_list", []any{"item1", "item2"})
+	cfg := config.NewConfig()
+	cfg.Set("test_string", "value")
+	cfg.Set("test_bool", true)
+	cfg.Set("test_enum", "option1")
+	cfg.Set("test_list", []any{"item1", "item2"})
 
-schema := []copilot.SchemaField{
-{Name: "test_string", Type: "string", Default: "", Description: "String field"},
-{Name: "test_bool", Type: "bool", Default: "false", Description: "Bool field"},
-{Name: "test_enum", Type: "enum", Default: "option1", Options: []string{"option1", "option2"}},
-{Name: "test_list", Type: "list", Default: "", Description: "List field"},
-}
+	schema := []copilot.SchemaField{
+		{Name: "test_string", Type: "string", Default: "", Description: "String field"},
+		{Name: "test_bool", Type: "bool", Default: "false", Description: "Bool field"},
+		{Name: "test_enum", Type: "enum", Default: "option1", Options: []string{"option1", "option2"}},
+		{Name: "test_list", Type: "list", Default: "", Description: "List field"},
+	}
 
-entries := buildEntries(cfg, schema)
+	entries := buildEntries(cfg, schema)
 
-configItemCount := 0
-for _, e := range entries {
-if !e.isHeader {
-configItemCount++
-}
-}
+	configItemCount := 0
+	for _, e := range entries {
+		if !e.isHeader {
+			configItemCount++
+		}
+	}
 
-if configItemCount != 4 {
-t.Errorf("Expected 4 config items, got %d", configItemCount)
-}
+	if configItemCount != 4 {
+		t.Errorf("Expected 4 config items, got %d", configItemCount)
+	}
 }
 
 // UT-TUI-004: Sensitive fields are categorized under Sensitive group
 func TestSensitiveFieldsInList(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("copilot_tokens", map[string]any{"token": "secret"})
-cfg.Set("model", "gpt-4")
+	cfg := config.NewConfig()
+	cfg.Set("copilot_tokens", map[string]any{"token": "secret"})
+	cfg.Set("model", "gpt-4")
 
-schema := []copilot.SchemaField{
-{Name: "copilot_tokens", Type: "string", Default: "", Description: "Tokens"},
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}, Description: "Model"},
-}
+	schema := []copilot.SchemaField{
+		{Name: "copilot_tokens", Type: "string", Default: "", Description: "Tokens"},
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}, Description: "Model"},
+	}
 
-entries := buildEntries(cfg, schema)
+	entries := buildEntries(cfg, schema)
 
-var foundSensitive, foundModel bool
-for _, e := range entries {
-if !e.isHeader {
-if e.item.Field.Name == "copilot_tokens" {
-foundSensitive = true
-}
-if e.item.Field.Name == "model" {
-foundModel = true
-}
-}
-}
+	var foundSensitive, foundModel bool
+	for _, e := range entries {
+		if !e.isHeader {
+			if e.item.Field.Name == "copilot_tokens" {
+				foundSensitive = true
+			}
+			if e.item.Field.Name == "model" {
+				foundModel = true
+			}
+		}
+	}
 
-if !foundSensitive {
-t.Error("Sensitive field not found in entries")
-}
-if !foundModel {
-t.Error("Model field not found in entries")
-}
+	if !foundSensitive {
+		t.Error("Sensitive field not found in entries")
+	}
+	if !foundModel {
+		t.Error("Model field not found in entries")
+	}
 }
 
 // UT-TUI-005: Alt-screen compatibility
 func TestAltScreenCompatibility(t *testing.T) {
-cfg := config.NewConfig()
-model := NewModel(cfg, []copilot.SchemaField{}, nil, "0.0.412", "/tmp/config.json")
+	cfg := config.NewConfig()
+	model := NewModel(cfg, []copilot.SchemaField{}, nil, "0.0.412", "/tmp/config.json")
 
-cmd := model.Init()
-if cmd != nil {
-t.Error("Init() should return nil")
-}
+	cmd := model.Init()
+	if cmd != nil {
+		t.Error("Init() should return nil")
+	}
 }
 
 // UT-TUI-006: Window resize updates panel sizes
 func TestWindowResize(t *testing.T) {
-cfg := config.NewConfig()
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-}
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
 
-msg := tea.WindowSizeMsg{Width: 120, Height: 40}
-newModel, _ := model.Update(msg)
+	msg := tea.WindowSizeMsg{Width: 120, Height: 40}
+	newModel, _ := model.Update(msg)
 
-m := newModel.(*Model)
-if m.windowWidth != 120 {
-t.Errorf("Expected windowWidth 120, got %d", m.windowWidth)
-}
-if m.windowHeight != 40 {
-t.Errorf("Expected windowHeight 40, got %d", m.windowHeight)
-}
+	m := newModel.(*Model)
+	if m.windowWidth != 120 {
+		t.Errorf("Expected windowWidth 120, got %d", m.windowWidth)
+	}
+	if m.windowHeight != 40 {
+		t.Errorf("Expected windowHeight 40, got %d", m.windowHeight)
+	}
 }
 
 // UT-TUI-007: State transition from Browsing to Editing
 func TestBrowsingToEditingTransition(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-// Cursor starts on first ConfigItem (skips GroupHeader)
-if item := model.listPanel.SelectedItem(); item == nil {
-t.Fatal("No item selected initially")
-}
+	// Cursor starts on first ConfigItem (skips GroupHeader)
+	if item := model.listPanel.SelectedItem(); item == nil {
+		t.Fatal("No item selected initially")
+	}
 
-msg := tea.KeyMsg{Type: tea.KeyEnter}
-newModel, _ := model.Update(msg)
+	msg := tea.KeyMsg{Type: tea.KeyEnter}
+	newModel, _ := model.Update(msg)
 
-m := newModel.(*Model)
-if m.state != StateEditing {
-t.Errorf("Expected Editing state after Enter, got %v", m.state)
-}
+	m := newModel.(*Model)
+	if m.state != StateEditing {
+		t.Errorf("Expected Editing state after Enter, got %v", m.state)
+	}
 }
 
 // UT-TUI-008: State transition from Editing to Browsing
 func TestEditingToBrowsingTransition(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.state = StateEditing
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.state = StateEditing
 
-msg := tea.KeyMsg{Type: tea.KeyEsc}
-newModel, _ := model.Update(msg)
+	msg := tea.KeyMsg{Type: tea.KeyEsc}
+	newModel, _ := model.Update(msg)
 
-m := newModel.(*Model)
-if m.state != StateBrowsing {
-t.Errorf("Expected Browsing state after Esc, got %v", m.state)
-}
+	m := newModel.(*Model)
+	if m.state != StateBrowsing {
+		t.Errorf("Expected Browsing state after Esc, got %v", m.state)
+	}
 }
 
 // UT-TUI-009: Token-like values are treated as sensitive
 func TestTokenLikeValueTreatedAsSensitive(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("custom_field", "ghp_abc123secrettoken")
+	cfg := config.NewConfig()
+	cfg.Set("custom_field", "ghp_abc123secrettoken")
 
-schema := []copilot.SchemaField{
-{Name: "custom_field", Type: "string", Default: "", Description: "Custom field"},
-}
+	schema := []copilot.SchemaField{
+		{Name: "custom_field", Type: "string", Default: "", Description: "Custom field"},
+	}
 
-entries := buildEntries(cfg, schema)
+	entries := buildEntries(cfg, schema)
 
-// Should be in Sensitive category
-var inSensitive bool
-var sawSensitiveHeader bool
-for _, e := range entries {
-if e.isHeader && e.header == "Sensitive" {
-sawSensitiveHeader = true
-}
-if sawSensitiveHeader && !e.isHeader && e.item.Field.Name == "custom_field" {
-inSensitive = true
-break
-}
-}
+	// Should be in Sensitive category
+	var inSensitive bool
+	var sawSensitiveHeader bool
+	for _, e := range entries {
+		if e.isHeader && e.header == "Sensitive" {
+			sawSensitiveHeader = true
+		}
+		if sawSensitiveHeader && !e.isHeader && e.item.Field.Name == "custom_field" {
+			inSensitive = true
+			break
+		}
+	}
 
-if !inSensitive {
-t.Error("Token-like value field should be in Sensitive category")
-}
+	if !inSensitive {
+		t.Error("Token-like value field should be in Sensitive category")
+	}
 }
 
 // UT-TUI-010: Field categorization logic
 func TestFieldCategorization(t *testing.T) {
-cfg := config.NewConfig()
+	cfg := config.NewConfig()
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark", "light"}},
-{Name: "allowed_urls", Type: "list"},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+		{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark", "light"}},
+		{Name: "allowed_urls", Type: "list"},
+	}
 
-entries := buildEntries(cfg, schema)
+	entries := buildEntries(cfg, schema)
 
-headerCount := 0
-for _, e := range entries {
-if e.isHeader {
-headerCount++
-}
-}
+	headerCount := 0
+	for _, e := range entries {
+		if e.isHeader {
+			headerCount++
+		}
+	}
 
-if headerCount < 2 {
-t.Errorf("Expected at least 2 group headers, got %d", headerCount)
-}
+	if headerCount < 2 {
+		t.Errorf("Expected at least 2 group headers, got %d", headerCount)
+	}
 }
 
 // UT-TUI-011: DetailPanel renders field information
 func TestDetailPanelRender(t *testing.T) {
-detail := NewDetailPanel()
-detail.SetSize(50, 20)
+	detail := NewDetailPanel()
+	detail.SetSize(50, 20)
 
-field := copilot.SchemaField{
-Name:        "model",
-Type:        "enum",
-Default:     "gpt-4",
-Options:     []string{"gpt-4", "gpt-3.5-turbo"},
-Description: "AI model to use",
-}
+	field := copilot.SchemaField{
+		Name:        "model",
+		Type:        "enum",
+		Default:     "gpt-4",
+		Options:     []string{"gpt-4", "gpt-3.5-turbo"},
+		Description: "AI model to use",
+	}
 
-detail.SetField(field, "gpt-4")
+	detail.SetField(field, "gpt-4")
 
-view := detail.View()
-if view == "" {
-t.Error("DetailPanel.View() returned empty string")
-}
+	view := detail.View()
+	if view == "" {
+		t.Error("DetailPanel.View() returned empty string")
+	}
 }
 
 // UT-TUI-012: formatValueCompact handles different value types
 func TestFormatValueCompact(t *testing.T) {
-tests := []struct {
-name       string
-value      any
-defaultVal string
-maxLen     int
-want       string
-}{
-{"string", "test", "", 10, "test"},
-{"bool true", true, "", 10, "true"},
-{"bool false", false, "", 10, "false"},
-{"empty list", []any{}, "", 10, "(empty)"},
-{"list", []any{"a", "b"}, "", 20, "(2 items)"},
-{"truncated", "very long string that exceeds max length", "", 10, "very lo..."},
-{"nil", nil, "", 10, "(not set)"},
-// New test cases for default-value display (WI-0004)
-{"nil with default", nil, "auto", 20, "auto (default)"},
-{"nil with bool default", nil, "false", 20, "false (default)"},
-{"nil with long default truncated", nil, "very-long-default", 10, "very-lo..."},
-{"nil no default", nil, "", 10, "(not set)"},
-{"non-nil ignores default", "custom", "auto", 20, "custom"},
-{"bool false ignores default", false, "false", 20, "false"},
-}
+	tests := []struct {
+		name       string
+		value      any
+		defaultVal string
+		maxLen     int
+		want       string
+	}{
+		{"string", "test", "", 10, "test"},
+		{"bool true", true, "", 10, "true"},
+		{"bool false", false, "", 10, "false"},
+		{"empty list", []any{}, "", 10, "(empty)"},
+		{"list", []any{"a", "b"}, "", 20, "(2 items)"},
+		{"truncated", "very long string that exceeds max length", "", 10, "very lo..."},
+		{"nil", nil, "", 10, "(not set)"},
+		// New test cases for default-value display (WI-0004)
+		{"nil with default", nil, "auto", 20, "auto (default)"},
+		{"nil with bool default", nil, "false", 20, "false (default)"},
+		{"nil with long default truncated", nil, "very-long-default", 10, "very-lo..."},
+		{"nil no default", nil, "", 10, "(not set)"},
+		{"non-nil ignores default", "custom", "auto", 20, "custom"},
+		{"bool false ignores default", false, "false", 20, "false"},
+	}
 
-for _, tt := range tests {
-t.Run(tt.name, func(t *testing.T) {
-got := formatValueCompact(tt.value, tt.defaultVal, tt.maxLen)
-if got != tt.want {
-t.Errorf("formatValueCompact(%v, %q, %d) = %q, want %q", tt.value, tt.defaultVal, tt.maxLen, got, tt.want)
-}
-})
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatValueCompact(tt.value, tt.defaultVal, tt.maxLen)
+			if got != tt.want {
+				t.Errorf("formatValueCompact(%v, %q, %d) = %q, want %q", tt.value, tt.defaultVal, tt.maxLen, got, tt.want)
+			}
+		})
+	}
 }
 
 // UT-TUI-013: ListPanel skips group headers during navigation
 func TestListPanelSkipsHeaders(t *testing.T) {
-entries := []listEntry{
-{isHeader: true, header: "Group A"},
-{item: ConfigItem{Field: copilot.SchemaField{Name: "field1"}}},
-{item: ConfigItem{Field: copilot.SchemaField{Name: "field2"}}},
-{isHeader: true, header: "Group B"},
-{item: ConfigItem{Field: copilot.SchemaField{Name: "field3"}}},
-}
+	entries := []listEntry{
+		{isHeader: true, header: "Group A"},
+		{item: ConfigItem{Field: copilot.SchemaField{Name: "field1"}}},
+		{item: ConfigItem{Field: copilot.SchemaField{Name: "field2"}}},
+		{isHeader: true, header: "Group B"},
+		{item: ConfigItem{Field: copilot.SchemaField{Name: "field3"}}},
+	}
 
-lp := NewListPanel(entries)
+	lp := NewListPanel(entries)
 
-// Should start on field1
-if item := lp.SelectedItem(); item == nil || item.Field.Name != "field1" {
-t.Fatalf("Expected cursor on field1, got %v", lp.SelectedItem())
-}
+	// Should start on field1
+	if item := lp.SelectedItem(); item == nil || item.Field.Name != "field1" {
+		t.Fatalf("Expected cursor on field1, got %v", lp.SelectedItem())
+	}
 
-lp.Down()
-if item := lp.SelectedItem(); item == nil || item.Field.Name != "field2" {
-t.Errorf("Expected cursor on field2 after Down, got %v", lp.SelectedItem())
-}
+	lp.Down()
+	if item := lp.SelectedItem(); item == nil || item.Field.Name != "field2" {
+		t.Errorf("Expected cursor on field2 after Down, got %v", lp.SelectedItem())
+	}
 
-// Down again should skip header and land on field3
-lp.Down()
-if item := lp.SelectedItem(); item == nil || item.Field.Name != "field3" {
-t.Errorf("Expected cursor on field3 after Down (skipping header), got %v", lp.SelectedItem())
-}
+	// Down again should skip header and land on field3
+	lp.Down()
+	if item := lp.SelectedItem(); item == nil || item.Field.Name != "field3" {
+		t.Errorf("Expected cursor on field3 after Down (skipping header), got %v", lp.SelectedItem())
+	}
 
-// Up should skip header and land on field2
-lp.Up()
-if item := lp.SelectedItem(); item == nil || item.Field.Name != "field2" {
-t.Errorf("Expected cursor on field2 after Up (skipping header), got %v", lp.SelectedItem())
-}
+	// Up should skip header and land on field2
+	lp.Up()
+	if item := lp.SelectedItem(); item == nil || item.Field.Name != "field2" {
+		t.Errorf("Expected cursor on field2 after Up (skipping header), got %v", lp.SelectedItem())
+	}
 }
 
 // UT-TUI-014: Copilot icon constant structure
 func TestCopilotIconConstant(t *testing.T) {
-lines := strings.Split(copilotIcon, "\n")
-if len(lines) != 4 {
-t.Errorf("copilotIcon should have 4 lines, got %d", len(lines))
-}
-for i, line := range lines {
-w := len([]rune(line))
-if w != 6 {
-t.Errorf("copilotIcon line %d width: got %d runes, want 6 (line=%q)", i, w, line)
-}
-}
+	lines := strings.Split(copilotIcon, "\n")
+	if len(lines) != 4 {
+		t.Errorf("copilotIcon should have 4 lines, got %d", len(lines))
+	}
+	for i, line := range lines {
+		w := len([]rune(line))
+		if w != 6 {
+			t.Errorf("copilotIcon line %d width: got %d runes, want 6 (line=%q)", i, w, line)
+		}
+	}
 }
 
 // UT-TUI-015: View no longer contains gear emoji
 func TestViewNoGearEmoji(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-}
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+	}
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-view := model.View()
-if strings.Contains(view, "⚙") {
-t.Error("View() should not contain the gear emoji after icon replacement")
-}
+	view := model.View()
+	if strings.Contains(view, "⚙") {
+		t.Error("View() should not contain the gear emoji after icon replacement")
+	}
 }
 
 // UT-TUI-016: View renders with ASCII icon and title
 func TestViewRendersWithIcon(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-}
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+	}
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-view := model.View()
-if !strings.Contains(view, "╭─╮╭─╮") {
-t.Error("View() should contain the first line of the copilot icon")
-}
-if !strings.Contains(view, "ccc") {
-t.Error("View() should contain the title text")
-}
-if !strings.Contains(view, "0.0.412") {
-t.Error("View() should contain the version string")
-}
+	view := model.View()
+	if !strings.Contains(view, "╭─╮╭─╮") {
+		t.Error("View() should contain the first line of the copilot icon")
+	}
+	if !strings.Contains(view, "ccc") {
+		t.Error("View() should contain the title text")
+	}
+	if !strings.Contains(view, "0.0.412") {
+		t.Error("View() should contain the version string")
+	}
 }
 
 // UT-TUI-017: View renders framed header with border characters
 func TestViewRendersFramedHeader(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-}
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+	}
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-view := model.View()
-// outer frame + header frame + help bar frame + 2 panels = 5 top-left corners minimum
-topLeftCount := strings.Count(view, "╭")
-if topLeftCount < 5 {
-t.Errorf("Expected at least 5 top-left corners for framed sections, got %d", topLeftCount)
-}
+	view := model.View()
+	// outer frame + header frame + help bar frame + 2 panels = 5 top-left corners minimum
+	topLeftCount := strings.Count(view, "╭")
+	if topLeftCount < 5 {
+		t.Errorf("Expected at least 5 top-left corners for framed sections, got %d", topLeftCount)
+	}
 }
 
 // UT-TUI-018: View renders at 80x24 without panic
 func TestViewRendersAt80x24(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
-cfg.Set("theme", "dark")
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark"}},
-}
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 80
-model.windowHeight = 24
-model.updateSizes()
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	cfg.Set("theme", "dark")
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+		{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark"}},
+	}
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 80
+	model.windowHeight = 24
+	model.updateSizes()
 
-view := model.View()
-if view == "" {
-t.Error("View() at 80x24 returned empty string")
-}
+	view := model.View()
+	if view == "" {
+		t.Error("View() at 80x24 returned empty string")
+	}
 }
 
 // UT-TUI-019: Panel height overhead arithmetic at various sizes
 func TestPanelHeightOverhead(t *testing.T) {
-tests := []struct {
-name          string
-width, height int
-}{
-{"80x24", 80, 24},
-{"120x40", 120, 40},
-{"100x30", 100, 30},
-}
+	tests := []struct {
+		name          string
+		width, height int
+	}{
+		{"80x24", 80, 24},
+		{"120x40", 120, 40},
+		{"100x30", 100, 30},
+	}
 
-for _, tt := range tests {
-t.Run(tt.name, func(t *testing.T) {
-cfg := config.NewConfig()
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-}
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-msg := tea.WindowSizeMsg{Width: tt.width, Height: tt.height}
-newModel, _ := model.Update(msg)
-m := newModel.(*Model)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := config.NewConfig()
+			schema := []copilot.SchemaField{
+				{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+			}
+			model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+			msg := tea.WindowSizeMsg{Width: tt.width, Height: tt.height}
+			newModel, _ := model.Update(msg)
+			m := newModel.(*Model)
 
-view := m.View()
-if view == "" {
-t.Errorf("View() at %dx%d returned empty string", tt.width, tt.height)
-}
-})
-}
+			view := m.View()
+			if view == "" {
+				t.Errorf("View() at %dx%d returned empty string", tt.width, tt.height)
+			}
+		})
+	}
 }
 
 // UT-TUI-020: Small terminal floor guard prevents panic
 func TestSmallTerminalFloor(t *testing.T) {
-tests := []struct {
-name          string
-width, height int
-}{
-{"40x15 - at floor", 40, 15},
-{"30x12 - below floor", 30, 12},
-{"20x10 - very small", 20, 10},
-}
+	tests := []struct {
+		name          string
+		width, height int
+	}{
+		{"40x15 - at floor", 40, 15},
+		{"30x12 - below floor", 30, 12},
+		{"20x10 - very small", 20, 10},
+	}
 
-for _, tt := range tests {
-t.Run(tt.name, func(t *testing.T) {
-cfg := config.NewConfig()
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-}
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-msg := tea.WindowSizeMsg{Width: tt.width, Height: tt.height}
-newModel, _ := model.Update(msg)
-m := newModel.(*Model)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := config.NewConfig()
+			schema := []copilot.SchemaField{
+				{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+			}
+			model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+			msg := tea.WindowSizeMsg{Width: tt.width, Height: tt.height}
+			newModel, _ := model.Update(msg)
+			m := newModel.(*Model)
 
-view := m.View()
-if view == "" {
-t.Errorf("View() at %dx%d returned empty string", tt.width, tt.height)
-}
-})
-}
+			view := m.View()
+			if view == "" {
+				t.Errorf("View() at %dx%d returned empty string", tt.width, tt.height)
+			}
+		})
+	}
 }
 
 // UT-TUI-021: Detail panel shows default annotation for unset field with default
@@ -602,77 +602,77 @@ func TestStateEnvVarsDistinct(t *testing.T) {
 
 // UT-TUI-025: View renders without panicking
 func TestViewRenders(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
-cfg.Set("theme", "dark")
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	cfg.Set("theme", "dark")
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
-{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark"}},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+		{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark"}},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-view := model.View()
-if view == "" {
-t.Error("View() returned empty string")
-}
+	view := model.View()
+	if view == "" {
+		t.Error("View() returned empty string")
+	}
 }
 
 // UT-TUI-028: DefaultKeyMap Left binding has correct keys
 func TestDefaultKeyMapLeftBinding(t *testing.T) {
-km := DefaultKeyMap()
+	km := DefaultKeyMap()
 
-// Test that Left responds to "left" arrow key
-leftMsg := tea.KeyMsg{Type: tea.KeyLeft}
-if !key.Matches(leftMsg, km.Left) {
-t.Error("Left binding should match tea.KeyLeft")
-}
+	// Test that Left responds to "left" arrow key
+	leftMsg := tea.KeyMsg{Type: tea.KeyLeft}
+	if !key.Matches(leftMsg, km.Left) {
+		t.Error("Left binding should match tea.KeyLeft")
+	}
 
-// Test that Left responds to "h" key
-hMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}}
-if !key.Matches(hMsg, km.Left) {
-t.Error("Left binding should match 'h' key")
-}
+	// Test that Left responds to "h" key
+	hMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}}
+	if !key.Matches(hMsg, km.Left) {
+		t.Error("Left binding should match 'h' key")
+	}
 
-// Verify help text
-if km.Left.Help().Desc != "config" {
-t.Errorf("Left help desc = %q, want %q", km.Left.Help().Desc, "config")
-}
+	// Verify help text
+	if km.Left.Help().Desc != "config" {
+		t.Errorf("Left help desc = %q, want %q", km.Left.Help().Desc, "config")
+	}
 }
 
 // UT-TUI-029: DefaultKeyMap Right binding has correct keys
 func TestDefaultKeyMapRightBinding(t *testing.T) {
-km := DefaultKeyMap()
+	km := DefaultKeyMap()
 
-// Test that Right responds to "right" arrow key
-rightMsg := tea.KeyMsg{Type: tea.KeyRight}
-if !key.Matches(rightMsg, km.Right) {
-t.Error("Right binding should match tea.KeyRight")
-}
+	// Test that Right responds to "right" arrow key
+	rightMsg := tea.KeyMsg{Type: tea.KeyRight}
+	if !key.Matches(rightMsg, km.Right) {
+		t.Error("Right binding should match tea.KeyRight")
+	}
 
-// Test that Right responds to "l" key
-lMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}}
-if !key.Matches(lMsg, km.Right) {
-t.Error("Right binding should match 'l' key")
-}
+	// Test that Right responds to "l" key
+	lMsg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}}
+	if !key.Matches(lMsg, km.Right) {
+		t.Error("Right binding should match 'l' key")
+	}
 
-// Verify help text
-if km.Right.Help().Desc != "env vars" {
-t.Errorf("Right help desc = %q, want %q", km.Right.Help().Desc, "env vars")
-}
+	// Verify help text
+	if km.Right.Help().Desc != "env vars" {
+		t.Errorf("Right help desc = %q, want %q", km.Right.Help().Desc, "env vars")
+	}
 }
 
 // UT-TUI-030: DefaultKeyMap Tab help text is "switch view"
 func TestDefaultKeyMapTabHelpText(t *testing.T) {
-km := DefaultKeyMap()
+	km := DefaultKeyMap()
 
-if km.Tab.Help().Desc != "switch view" {
-t.Errorf("Tab help desc = %q, want %q", km.Tab.Help().Desc, "switch view")
-}
+	if km.Tab.Help().Desc != "switch view" {
+		t.Errorf("Tab help desc = %q, want %q", km.Tab.Help().Desc, "switch view")
+	}
 }
 
 // UT-TUI-031: NewEnvVarsPanel with non-empty slice starts cursor at 0
@@ -1155,118 +1155,118 @@ func TestNewModelNilEnvVars(t *testing.T) {
 
 // UT-TUI-055: Enter commits enum field and returns to Browsing
 func TestEnterCommitsEnumField(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-// Enter editing
-newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m := newModel.(*Model)
-if m.state != StateEditing {
-t.Fatal("Expected StateEditing after Enter")
-}
+	// Enter editing
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m := newModel.(*Model)
+	if m.state != StateEditing {
+		t.Fatal("Expected StateEditing after Enter")
+	}
 
-// Press Enter to commit (enum field, not list)
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m = newModel.(*Model)
-if m.state != StateBrowsing {
-t.Errorf("Expected StateBrowsing after Enter on enum field, got %v", m.state)
-}
+	// Press Enter to commit (enum field, not list)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = newModel.(*Model)
+	if m.state != StateBrowsing {
+		t.Errorf("Expected StateBrowsing after Enter on enum field, got %v", m.state)
+	}
 }
 
 // UT-TUI-056: Enter commits string field and returns to Browsing
 func TestEnterCommitsStringField(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("theme", "dark")
+	cfg := config.NewConfig()
+	cfg.Set("theme", "dark")
 
-schema := []copilot.SchemaField{
-{Name: "theme", Type: "string", Default: ""},
-}
+	schema := []copilot.SchemaField{
+		{Name: "theme", Type: "string", Default: ""},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-// Enter editing
-newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m := newModel.(*Model)
-if m.state != StateEditing {
-t.Fatal("Expected StateEditing after Enter")
-}
+	// Enter editing
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m := newModel.(*Model)
+	if m.state != StateEditing {
+		t.Fatal("Expected StateEditing after Enter")
+	}
 
-// Press Enter to commit (string field)
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m = newModel.(*Model)
-if m.state != StateBrowsing {
-t.Errorf("Expected StateBrowsing after Enter on string field, got %v", m.state)
-}
+	// Press Enter to commit (string field)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = newModel.(*Model)
+	if m.state != StateBrowsing {
+		t.Errorf("Expected StateBrowsing after Enter on string field, got %v", m.state)
+	}
 }
 
 // UT-TUI-057: Enter commits bool field and returns to Browsing
 func TestEnterCommitsBoolField(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("stream", true)
+	cfg := config.NewConfig()
+	cfg.Set("stream", true)
 
-schema := []copilot.SchemaField{
-{Name: "stream", Type: "bool", Default: "true"},
-}
+	schema := []copilot.SchemaField{
+		{Name: "stream", Type: "bool", Default: "true"},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-// Enter editing
-newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m := newModel.(*Model)
-if m.state != StateEditing {
-t.Fatal("Expected StateEditing after Enter")
-}
+	// Enter editing
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m := newModel.(*Model)
+	if m.state != StateEditing {
+		t.Fatal("Expected StateEditing after Enter")
+	}
 
-// Press Enter to commit (bool field)
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m = newModel.(*Model)
-if m.state != StateBrowsing {
-t.Errorf("Expected StateBrowsing after Enter on bool field, got %v", m.state)
-}
+	// Press Enter to commit (bool field)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = newModel.(*Model)
+	if m.state != StateBrowsing {
+		t.Errorf("Expected StateBrowsing after Enter on bool field, got %v", m.state)
+	}
 }
 
 // UT-TUI-058: Enter on list field stays in Editing
 func TestEnterOnListFieldStaysEditing(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("allowed_urls", []any{"https://example.com"})
+	cfg := config.NewConfig()
+	cfg.Set("allowed_urls", []any{"https://example.com"})
 
-schema := []copilot.SchemaField{
-{Name: "allowed_urls", Type: "list"},
-}
+	schema := []copilot.SchemaField{
+		{Name: "allowed_urls", Type: "list"},
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-// Enter editing
-newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m := newModel.(*Model)
-if m.state != StateEditing {
-t.Fatal("Expected StateEditing after Enter")
-}
+	// Enter editing
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m := newModel.(*Model)
+	if m.state != StateEditing {
+		t.Fatal("Expected StateEditing after Enter")
+	}
 
-// Press Enter on list field — should stay in editing (newline in textarea)
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m = newModel.(*Model)
-if m.state != StateEditing {
-t.Errorf("Expected to remain in StateEditing for list field, got %v", m.state)
-}
+	// Press Enter on list field — should stay in editing (newline in textarea)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = newModel.(*Model)
+	if m.state != StateEditing {
+		t.Errorf("Expected to remain in StateEditing for list field, got %v", m.state)
+	}
 }
 
 // UT-TUI-059: Modified flag default and after UpdateItemValue
@@ -1374,82 +1374,82 @@ func TestClearAllModified(t *testing.T) {
 
 // UT-TUI-062: Saved flag cleared after commit
 func TestSavedFlagClearedAfterCommit(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+	}
 
-t.Run("Esc commit clears saved", func(t *testing.T) {
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
-model.saved = true
+	t.Run("Esc commit clears saved", func(t *testing.T) {
+		model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+		model.windowWidth = 100
+		model.windowHeight = 30
+		model.updateSizes()
+		model.saved = true
 
-newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m := newModel.(*Model)
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		m := newModel.(*Model)
 
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-m = newModel.(*Model)
-if m.saved {
-t.Error("saved should be false after Esc commit")
-}
-if m.state != StateBrowsing {
-t.Error("should be in StateBrowsing after Esc")
-}
-})
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+		m = newModel.(*Model)
+		if m.saved {
+			t.Error("saved should be false after Esc commit")
+		}
+		if m.state != StateBrowsing {
+			t.Error("should be in StateBrowsing after Esc")
+		}
+	})
 
-t.Run("Enter commit clears saved", func(t *testing.T) {
-model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
-model.saved = true
+	t.Run("Enter commit clears saved", func(t *testing.T) {
+		model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+		model.windowWidth = 100
+		model.windowHeight = 30
+		model.updateSizes()
+		model.saved = true
 
-newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m := newModel.(*Model)
+		newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		m := newModel.(*Model)
 
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m = newModel.(*Model)
-if m.saved {
-t.Error("saved should be false after Enter commit")
-}
-if m.state != StateBrowsing {
-t.Error("should be in StateBrowsing after Enter")
-}
-})
+		newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+		m = newModel.(*Model)
+		if m.saved {
+			t.Error("saved should be false after Enter commit")
+		}
+		if m.state != StateBrowsing {
+			t.Error("should be in StateBrowsing after Enter")
+		}
+	})
 }
 
 // UT-TUI-063: Help bar shows enter confirm for non-list editing
 func TestHelpBarEnterConfirmNonList(t *testing.T) {
-keys := DefaultKeyMap()
-bindings := keys.ShortHelp(StateEditing, "string")
+	keys := DefaultKeyMap()
+	bindings := keys.ShortHelp(StateEditing, "string")
 
-found := false
-for _, b := range bindings {
-h := b.Help()
-if h.Key == "enter" && strings.Contains(h.Desc, "confirm") {
-found = true
-}
-}
-if !found {
-t.Error("Expected 'enter' + 'confirm' binding in editing help for non-list field")
-}
+	found := false
+	for _, b := range bindings {
+		h := b.Help()
+		if h.Key == "enter" && strings.Contains(h.Desc, "confirm") {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("Expected 'enter' + 'confirm' binding in editing help for non-list field")
+	}
 }
 
 // UT-TUI-064: Help bar omits enter confirm for list editing
 func TestHelpBarNoEnterConfirmList(t *testing.T) {
-keys := DefaultKeyMap()
-bindings := keys.ShortHelp(StateEditing, "list")
+	keys := DefaultKeyMap()
+	bindings := keys.ShortHelp(StateEditing, "list")
 
-for _, b := range bindings {
-h := b.Help()
-if h.Key == "enter" && strings.Contains(h.Desc, "confirm") {
-t.Error("List editing should NOT show 'enter confirm' binding")
-}
-}
+	for _, b := range bindings {
+		h := b.Help()
+		if h.Key == "enter" && strings.Contains(h.Desc, "confirm") {
+			t.Error("List editing should NOT show 'enter confirm' binding")
+		}
+	}
 }
 
 // UT-TUI-065: CurrentFieldType accessor returns correct type
@@ -1534,152 +1534,152 @@ func TestNarrowTerminalNotSavedNoPanic(t *testing.T) {
 
 // UT-TUI-069: Post-save reload preserves cursor by field name
 func TestPostSaveReloadPreservesCursor(t *testing.T) {
-tmpDir := t.TempDir()
-tmpFile := filepath.Join(tmpDir, "config.json")
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "config.json")
 
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
-cfg.Set("theme", "dark")
-cfg.Set("stream", true)
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	cfg.Set("theme", "dark")
+	cfg.Set("stream", true)
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
-{Name: "stream", Type: "bool", Default: "true"},
-{Name: "theme", Type: "string", Default: "auto"},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+		{Name: "stream", Type: "bool", Default: "true"},
+		{Name: "theme", Type: "string", Default: "auto"},
+	}
 
-if err := config.SaveConfig(tmpFile, cfg); err != nil {
-t.Fatalf("Failed to write initial config: %v", err)
-}
+	if err := config.SaveConfig(tmpFile, cfg); err != nil {
+		t.Fatalf("Failed to write initial config: %v", err)
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", tmpFile)
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	model := NewModel(cfg, schema, nil, "0.0.412", tmpFile)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-model.listPanel.Down()
-selectedBefore := model.listPanel.SelectedItem()
-if selectedBefore == nil {
-t.Fatal("Expected a selected item after Down")
-}
-fieldNameBefore := selectedBefore.Field.Name
+	model.listPanel.Down()
+	selectedBefore := model.listPanel.SelectedItem()
+	if selectedBefore == nil {
+		t.Fatal("Expected a selected item after Down")
+	}
+	fieldNameBefore := selectedBefore.Field.Name
 
-newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
-m := newModel.(*Model)
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+	m := newModel.(*Model)
 
-if !m.saved {
-t.Error("Expected saved == true after Ctrl+S")
-}
-if m.err != nil {
-t.Errorf("Expected no error after save, got: %v", m.err)
-}
+	if !m.saved {
+		t.Error("Expected saved == true after Ctrl+S")
+	}
+	if m.err != nil {
+		t.Errorf("Expected no error after save, got: %v", m.err)
+	}
 
-selectedAfter := m.listPanel.SelectedItem()
-if selectedAfter == nil {
-t.Fatal("Expected a selected item after save+reload")
-}
-if selectedAfter.Field.Name != fieldNameBefore {
-t.Errorf("Expected cursor on %q after save+reload, got %q", fieldNameBefore, selectedAfter.Field.Name)
-}
+	selectedAfter := m.listPanel.SelectedItem()
+	if selectedAfter == nil {
+		t.Fatal("Expected a selected item after save+reload")
+	}
+	if selectedAfter.Field.Name != fieldNameBefore {
+		t.Errorf("Expected cursor on %q after save+reload, got %q", fieldNameBefore, selectedAfter.Field.Name)
+	}
 }
 
 // UT-TUI-070: Modified flags cleared after successful save
 func TestModifiedFlagsClearedAfterSave(t *testing.T) {
-tmpDir := t.TempDir()
-tmpFile := filepath.Join(tmpDir, "config.json")
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "config.json")
 
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+	}
 
-if err := config.SaveConfig(tmpFile, cfg); err != nil {
-t.Fatalf("Failed to write initial config: %v", err)
-}
+	if err := config.SaveConfig(tmpFile, cfg); err != nil {
+		t.Fatalf("Failed to write initial config: %v", err)
+	}
 
-model := NewModel(cfg, schema, nil, "0.0.412", tmpFile)
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	model := NewModel(cfg, schema, nil, "0.0.412", tmpFile)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m := newModel.(*Model)
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-m = newModel.(*Model)
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m := newModel.(*Model)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = newModel.(*Model)
 
-hasModified := false
-for _, e := range m.listPanel.entries {
-if !e.isHeader && e.item.Modified {
-hasModified = true
-break
-}
-}
-if !hasModified {
-t.Fatal("Expected at least one modified entry before save")
-}
+	hasModified := false
+	for _, e := range m.listPanel.entries {
+		if !e.isHeader && e.item.Modified {
+			hasModified = true
+			break
+		}
+	}
+	if !hasModified {
+		t.Fatal("Expected at least one modified entry before save")
+	}
 
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
-m = newModel.(*Model)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+	m = newModel.(*Model)
 
-if !m.saved {
-t.Error("Expected saved == true after Ctrl+S")
-}
+	if !m.saved {
+		t.Error("Expected saved == true after Ctrl+S")
+	}
 
-for _, e := range m.listPanel.entries {
-if !e.isHeader && e.item.Modified {
-t.Errorf("Entry %q should have Modified == false after save", e.item.Field.Name)
-}
-}
+	for _, e := range m.listPanel.entries {
+		if !e.isHeader && e.item.Modified {
+			t.Errorf("Entry %q should have Modified == false after save", e.item.Field.Name)
+		}
+	}
 
-view := m.listPanel.View()
-if strings.Contains(view, "(not-saved)") {
-t.Error("No '(not-saved)' text should appear after successful save")
-}
+	view := m.listPanel.View()
+	if strings.Contains(view, "(not-saved)") {
+		t.Error("No '(not-saved)' text should appear after successful save")
+	}
 }
 
 // UT-TUI-071: Save failure does not clear Modified flags
 func TestSaveFailureKeepsModifiedFlags(t *testing.T) {
-cfg := config.NewConfig()
-cfg.Set("model", "gpt-4")
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
 
-schema := []copilot.SchemaField{
-{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
-}
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
+	}
 
-invalidPath := filepath.Join(string(os.PathSeparator), "nonexistent", "deep", "path", "config.json")
+	invalidPath := filepath.Join(string(os.PathSeparator), "nonexistent", "deep", "path", "config.json")
 
-model := NewModel(cfg, schema, nil, "0.0.412", invalidPath)
-model.windowWidth = 100
-model.windowHeight = 30
-model.updateSizes()
+	model := NewModel(cfg, schema, nil, "0.0.412", invalidPath)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
 
-newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
-m := newModel.(*Model)
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-m = newModel.(*Model)
+	newModel, _ := model.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m := newModel.(*Model)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = newModel.(*Model)
 
-newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
-m = newModel.(*Model)
+	newModel, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlS})
+	m = newModel.(*Model)
 
-if m.err == nil {
-t.Error("Expected error after save to invalid path")
-}
-if m.saved {
-t.Error("Expected saved == false after failed save")
-}
+	if m.err == nil {
+		t.Error("Expected error after save to invalid path")
+	}
+	if m.saved {
+		t.Error("Expected saved == false after failed save")
+	}
 
-hasModified := false
-for _, e := range m.listPanel.entries {
-if !e.isHeader && e.item.Modified {
-hasModified = true
-break
-}
-}
-if !hasModified {
-t.Error("Modified flags should be preserved when save fails")
-}
+	hasModified := false
+	for _, e := range m.listPanel.entries {
+		if !e.isHeader && e.item.Modified {
+			hasModified = true
+			break
+		}
+	}
+	if !hasModified {
+		t.Error("Modified flags should be preserved when save fails")
+	}
 }
 
 // UT-TUI-072: Enter on large enum transitions to StateModelPicker

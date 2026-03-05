@@ -50,7 +50,7 @@ func run(cmd *cobra.Command, args []string) error {
 	if err := logging.Init(logging.ParseLevel(logLevel), logPath); err != nil {
 		slog.Warn("failed to initialize logging", "error", err)
 	}
-	defer logging.Shutdown()
+	defer func() { _ = logging.Shutdown() }()
 	slog.Info("ccc starting", "version", version)
 
 	// Detect copilot version

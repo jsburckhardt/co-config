@@ -57,7 +57,7 @@ func TestConfigRoundTripIntegration(t *testing.T) {
 	}
 
 	// Verify JSON formatting (2-space indent)
-	data, _ := os.ReadFile(tmpPath)
+	data, _ := os.ReadFile(tmpPath) //nolint:gosec // test file path from t.TempDir()
 	content := string(data)
 	if len(content) > 0 && content[0] != '{' {
 		t.Error("saved JSON doesn't start with {")

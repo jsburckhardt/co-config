@@ -160,7 +160,7 @@ func TestSaveConfig_Format(t *testing.T) {
 		t.Fatalf("SaveConfig failed: %v", err)
 	}
 
-	data, err := os.ReadFile(tmpPath)
+	data, err := os.ReadFile(tmpPath) //nolint:gosec // test file path from t.TempDir()
 	if err != nil {
 		t.Fatalf("ReadFile failed: %v", err)
 	}
@@ -371,11 +371,11 @@ func TestSaveConfig_CreatesDirectory(t *testing.T) {
 // Test: DefaultPath returns a non-empty absolute path
 func TestDefaultPath_ReturnsAbsolutePath(t *testing.T) {
 	path := DefaultPath()
-	
+
 	if path == "" {
 		t.Error("DefaultPath() returned empty string")
 	}
-	
+
 	if !filepath.IsAbs(path) {
 		t.Errorf("DefaultPath() = %q is not an absolute path", path)
 	}

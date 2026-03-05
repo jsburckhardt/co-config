@@ -59,7 +59,7 @@ func TestMaskValue_String(t *testing.T) {
 
 	// Verify all characters are valid hex
 	for _, c := range hexPart {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
 			t.Errorf("Expected only hex characters, found invalid char '%c' in: %s", c, hexPart)
 		}
 	}

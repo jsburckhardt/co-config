@@ -18,7 +18,7 @@ func TestInit_CreatesLogFile(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
-		Shutdown()
+		_ = Shutdown()
 	})
 
 	err := Init(slog.LevelWarn, logPath)
@@ -40,7 +40,7 @@ func TestInit_WarnLevelWritesWarnEntry(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
-		Shutdown()
+		_ = Shutdown()
 	})
 
 	err := Init(slog.LevelWarn, logPath)
@@ -52,7 +52,7 @@ func TestInit_WarnLevelWritesWarnEntry(t *testing.T) {
 	slog.Warn("test warning message", "key", "value")
 
 	// Read the log file
-	content, err := os.ReadFile(logPath)
+	content, err := os.ReadFile(logPath) //nolint:gosec // test file path from t.TempDir()
 	if err != nil {
 		t.Fatalf("Failed to read log file: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestInit_InfoFilteredAtWarnLevel(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
-		Shutdown()
+		_ = Shutdown()
 	})
 
 	err := Init(slog.LevelWarn, logPath)
@@ -89,7 +89,7 @@ func TestInit_InfoFilteredAtWarnLevel(t *testing.T) {
 	slog.Info("test info message")
 
 	// Read the log file
-	content, err := os.ReadFile(logPath)
+	content, err := os.ReadFile(logPath) //nolint:gosec // test file path from t.TempDir()
 	if err != nil {
 		t.Fatalf("Failed to read log file: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestInit_DebugLevelWritesDebugEntry(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
-		Shutdown()
+		_ = Shutdown()
 	})
 
 	err := Init(slog.LevelDebug, logPath)
@@ -120,7 +120,7 @@ func TestInit_DebugLevelWritesDebugEntry(t *testing.T) {
 	slog.Debug("test debug message", "debug_key", "debug_value")
 
 	// Read the log file
-	content, err := os.ReadFile(logPath)
+	content, err := os.ReadFile(logPath) //nolint:gosec // test file path from t.TempDir()
 	if err != nil {
 		t.Fatalf("Failed to read log file: %v", err)
 	}
@@ -142,7 +142,7 @@ func TestInit_InvalidPathReturnsError(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
-		Shutdown()
+		_ = Shutdown()
 	})
 
 	// Create a temp dir, then make it read-only so MkdirAll fails inside it
@@ -153,7 +153,7 @@ func TestInit_InvalidPathReturnsError(t *testing.T) {
 	}
 	// Ensure we restore permissions so t.TempDir cleanup works
 	t.Cleanup(func() {
-		os.Chmod(readOnlyDir, 0700)
+		_ = os.Chmod(readOnlyDir, 0700) //nolint:gosec // restoring permissions for cleanup
 	})
 
 	invalidPath := filepath.Join(readOnlyDir, "subdir", "test.log")
@@ -174,11 +174,11 @@ func TestParseLevel_AllCases(t *testing.T) {
 		{"info", slog.LevelInfo},
 		{"warn", slog.LevelWarn},
 		{"error", slog.LevelError},
-		{"unknown", slog.LevelWarn},  // default
-		{"", slog.LevelWarn},          // default
-		{"DEBUG", slog.LevelDebug},    // case-insensitive
-		{"Info", slog.LevelInfo},      // case-insensitive
-		{"WARN", slog.LevelWarn},      // case-insensitive
+		{"unknown", slog.LevelWarn},    // default
+		{"", slog.LevelWarn},           // default
+		{"DEBUG", slog.LevelDebug},     // case-insensitive
+		{"Info", slog.LevelInfo},       // case-insensitive
+		{"WARN", slog.LevelWarn},       // case-insensitive
 		{"  debug  ", slog.LevelDebug}, // with whitespace
 		{" INFO ", slog.LevelInfo},     // with whitespace
 	}
@@ -231,7 +231,7 @@ func TestInit_CreatesParentDirectories(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
-		Shutdown()
+		_ = Shutdown()
 	})
 
 	err := Init(slog.LevelWarn, logPath)
@@ -259,7 +259,7 @@ func TestInit_FilePermissions(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
-		Shutdown()
+		_ = Shutdown()
 	})
 
 	err := Init(slog.LevelWarn, logPath)
@@ -290,7 +290,7 @@ func TestInit_ClosesExistingLogFile(t *testing.T) {
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
-		Shutdown()
+		_ = Shutdown()
 	})
 
 	// Initialize first logger
@@ -318,7 +318,7 @@ func TestInit_ClosesExistingLogFile(t *testing.T) {
 	}
 
 	// Second log should contain the second message
-	content2, err := os.ReadFile(logPath2)
+	content2, err := os.ReadFile(logPath2) //nolint:gosec // test file path from t.TempDir()
 	if err != nil {
 		t.Fatalf("Failed to read second log file: %v", err)
 	}
