@@ -27,11 +27,11 @@ func Init(level slog.Level, logPath string) error {
 	}
 
 	// Open log file with restricted permissions (owner read/write only)
-	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600) //nolint:gosec // logPath is user-provided log file path
 	if err != nil {
 		return fmt.Errorf("opening log file: %w", err)
 	}
-	
+
 	logFile = f
 	handler := slog.NewTextHandler(f, &slog.HandlerOptions{Level: level})
 	slog.SetDefault(slog.New(handler))
@@ -42,7 +42,7 @@ func Init(level slog.Level, logPath string) error {
 func ParseLevel(s string) slog.Level {
 	// Normalize input: trim whitespace and convert to lowercase
 	normalized := strings.ToLower(strings.TrimSpace(s))
-	
+
 	switch normalized {
 	case "debug":
 		return slog.LevelDebug

@@ -12,8 +12,8 @@ type modelItem struct {
 }
 
 func (i modelItem) Title() string       { return i.name }
-func (i modelItem) Description() string  { return "" }
-func (i modelItem) FilterValue() string  { return i.name }
+func (i modelItem) Description() string { return "" }
+func (i modelItem) FilterValue() string { return i.name }
 
 // ModelPickerPanel wraps a bubbles list.Model to provide a fuzzy-filterable
 // model selection experience.
