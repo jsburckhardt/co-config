@@ -9,6 +9,8 @@ This file is the single registry of all architectural decisions and core-compone
 | ADR-0002 | [Go with Charm TUI Stack](ADR-0002-go-charm-tui-stack.md) | Accepted | 2026-02-20 |
 | ADR-0003 | [Two-Panel TUI Layout Pattern](ADR-0003-two-panel-tui-layout.md) | Accepted | 2026-02-20 |
 | ADR-0004 | [TUI Multi-View Tab Navigation](ADR-0004-tui-multi-view-navigation.md) | Accepted | 2026-02-20 |
+| ADR-0005 | [Release Automation Tooling (GoReleaser)](ADR-0005-release-automation-tooling.md) | Accepted | 2025-06-30 |
+| ADR-0006 | [Binary Signing and Supply-Chain Security Strategy](ADR-0006-binary-signing-supply-chain-security.md) | Accepted | 2025-06-30 |
 
 ## Core-Components
 
@@ -18,6 +20,7 @@ This file is the single registry of all architectural decisions and core-compone
 | CC-0003 | [Logging](../core-components/CORE-COMPONENT-0003-logging.md) | Adopted | 2026-02-20 |
 | CC-0004 | [Configuration Management](../core-components/CORE-COMPONENT-0004-configuration-management.md) | Adopted | 2026-02-20 |
 | CC-0005 | [Sensitive Data Handling](../core-components/CORE-COMPONENT-0005-sensitive-data-handling.md) | Adopted | 2026-02-20 |
+| CC-0006 | [Release Pipeline](../core-components/CORE-COMPONENT-0006-release-pipeline.md) | Adopted | 2025-06-30 |
 
 ## Decisions
 
@@ -50,3 +53,18 @@ Short, actionable statements derived from ADRs and core-components. More than on
 | 23 | Track per-field dirty state via `Modified` flag on `ConfigItem` | CC-0004 | 2026-02-21 |
 | 24 | Re-read config from disk after every successful save to verify round-trip integrity | CC-0004 | 2026-02-21 |
 | 25 | Clear "✓ Saved" indicator when any new in-memory change is committed | CC-0004 | 2026-02-21 |
+| 26 | Use GoReleaser OSS for cross-compilation, archiving, and GitHub Release creation | ADR-0005 | 2025-06-30 |
+| 27 | Build with CGO_ENABLED=0 and -trimpath for reproducible cross-compiled binaries | ADR-0005 | 2025-06-30 |
+| 28 | Inject version metadata via ldflags (-X main.version, main.commit, main.date) | ADR-0005 | 2025-06-30 |
+| 29 | Use cosign keyless signing (Sigstore OIDC) for release checksum signing | ADR-0006 | 2025-06-30 |
+| 30 | Generate SPDX JSON SBOMs via Syft for every release archive | ADR-0006 | 2025-06-30 |
+| 31 | Generate SLSA L1 provenance via actions/attest-build-provenance | ADR-0006 | 2025-06-30 |
+| 32 | Prohibit GPG signing for initial release — adopt cosign keyless instead | ADR-0006 | 2025-06-30 |
+| 33 | Pin all third-party GitHub Actions to full commit SHAs | CC-0006 | 2025-06-30 |
+| 34 | Set workflow permissions per-job with least-privilege scoping | CC-0006 | 2025-06-30 |
+| 35 | Use release-please for automated semantic versioning from conventional commits | CC-0006 | 2025-06-30 |
+| 36 | Structure CI/CD as four workflows: ci.yml, govulncheck.yml, release-please.yml, release.yml | CC-0006 | 2025-06-30 |
+| 37 | Use golangci-lint for comprehensive Go linting in CI | CC-0006 | 2025-06-30 |
+| 38 | Use govulncheck with SARIF output for Go vulnerability scanning | CC-0006 | 2025-06-30 |
+| 39 | Require SHA256 checksum verification in the install script before extracting binaries | CC-0006 | 2025-06-30 |
+| 40 | Cross-compile for linux/darwin/windows on amd64/arm64 (exclude windows/arm64) | CC-0006 | 2025-06-30 |
