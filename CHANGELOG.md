@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.5](https://github.com/jsburckhardt/co-config/compare/v0.1.4...v0.1.5) (2026-03-08)
+
+
+### Bug Fixes
+
+* **install:** use ~/.local/bin fallback and auto-configure PATH ([22cc24b](https://github.com/jsburckhardt/co-config/commit/22cc24b70c25b5c9785927eead3ee9272ad15954))
+* **install:** use ~/.local/bin fallback and auto-configure PATH ([55e8483](https://github.com/jsburckhardt/co-config/commit/55e84837e25669ec4f2213757262daf1d83c6fee))
+
 ## [0.1.4](https://github.com/jsburckhardt/co-config/compare/v0.1.3...v0.1.4) (2026-03-08)
 
 
