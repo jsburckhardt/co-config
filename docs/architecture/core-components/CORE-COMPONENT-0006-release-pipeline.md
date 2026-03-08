@@ -53,7 +53,7 @@ Affects all files under `.github/workflows/`, the GoReleaser configuration (`.go
 
 - **`.goreleaser.yaml`** — Declarative release configuration at the repository root. Defines builds, archives, checksums, SBOMs, and signing.
 - **`.golangci.yml`** — Linter configuration at the repository root.
-- **`install.sh`** — curl-based install script at the repository root. Detects OS/arch, downloads the correct archive from GitHub Releases, verifies SHA256 checksum, and extracts the binary.
+- **`install.sh`** — curl-based install script at the repository root. Detects OS/arch, downloads the correct archive from GitHub Releases, verifies SHA256 checksum, extracts the binary, and configures the user's shell profile to include the install directory in PATH when a user-local fallback is used (see ADR-0010).
 - **`.release-please-manifest.json`** + **`release-please-config.json`** — release-please configuration files at the repository root.
 - **`SECURITY.md`** — Security policy document at the repository root.
 
@@ -64,6 +64,7 @@ Affects all files under `.github/workflows/`, the GoReleaser configuration (`.go
 - The release workflow produces: cross-compiled archives, `checksums.txt`, SPDX JSON SBOMs, cosign signature bundle, and SLSA provenance attestation.
 - The install script must verify SHA256 checksums before extracting any binary. It must fail loudly on checksum mismatch (`set -e`).
 - The install script supports `--version vX.Y.Z` for version pinning and `INSTALL_DIR` for custom install locations.
+- When the installer falls back to a user-local directory (`~/.local/bin`), it must configure the user's shell profile to include that directory in PATH, unless `NO_PATH_UPDATE=1` is set or `INSTALL_DIR` was explicitly provided (ADR-0010).
 
 ## Rationale
 
@@ -105,7 +106,7 @@ curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install
 curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.sh | sh -s -- --version v1.2.3
 
 # Install to custom directory
-INSTALL_DIR=~/bin curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.sh | sh
+INSTALL_DIR=~/.local/bin curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.sh | sh
 ```
 
 ### User verifies release artifacts
