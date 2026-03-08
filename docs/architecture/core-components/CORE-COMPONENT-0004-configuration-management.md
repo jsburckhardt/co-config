@@ -10,12 +10,18 @@ Define how `ccc` reads, validates, edits, and writes the Copilot CLI configurati
 
 ## Scope
 
-The `internal/config` package. Affects how the TUI presents config fields and how changes are persisted.
+The `internal/config` package. Affects how the TUI presents config fields and how changes are persisted. Covers all three configuration scopes (user, project, project-local) and their path resolution.
 
 ## Definition
 
 ### Rules
-- The canonical config path is `~/.copilot/config.json`, or `$XDG_CONFIG_HOME/copilot/config.json` if `XDG_CONFIG_HOME` is set
+- The canonical user config path is `~/.copilot/config.json`, or `$XDG_CONFIG_HOME/copilot/config.json` if `XDG_CONFIG_HOME` is set
+- Three config scopes are supported, cascading from general to specific:
+  1. **User** (global): `~/.copilot/config.json` — personal defaults
+  2. **Project**: `<project-root>/.copilot/settings.json` — team-shared, committed to VCS
+  3. **Project-local**: `<project-root>/.copilot/settings.local.json` — personal per-project overrides, gitignored
+- Each scope is loaded and edited independently; no merged or effective view is presented
+- When writing config, the active scope is the write target; values from other scopes are never modified
 - Config is read as raw JSON and decoded into a typed struct for known fields; unknown fields are preserved via a `map[string]any` catch-all
 - Config schema (available keys, types, defaults, descriptions) is auto-detected at startup by running `copilot help config` and parsing the output
 - The installed copilot version is detected by running `copilot version` and parsing the output
@@ -29,11 +35,17 @@ The `internal/config` package. Affects how the TUI presents config fields and ho
 - `Config` struct holds typed known fields plus a raw `map[string]any` for round-tripping
 - `LoadConfig(path string) (*Config, error)` — reads and parses the config file
 - `SaveConfig(path string, cfg *Config) error` — writes config back preserving unknown fields
+- `DefaultPath() string` — returns the user-level config path (`~/.copilot/config.json` or XDG equivalent)
+- `ProjectSettingsPath(projectDir string) string` — returns `<projectDir>/.copilot/settings.json`
+- `ProjectLocalSettingsPath(projectDir string) string` — returns `<projectDir>/.copilot/settings.local.json`
+- `Scope` type with values `ScopeUser`, `ScopeProject`, `ScopeProjectLocal`
 - `DetectSchema() (*Schema, error)` — runs `copilot help config` and parses available settings
 - `DetectVersion() (string, error)` — runs `copilot version` and extracts the version string
 
 ### Expectations
 - If the config file doesn't exist, the tool shows an empty/default config and creates it on save
+- If a project-scope or project-local config file does not exist, the tool shows an empty config and creates the file and `.copilot/` directory on first save
+- The TUI header indicates which scope is currently active, alongside the file path
 - If `copilot` is not installed, the tool shows an error screen with installation instructions
 - JSON formatting is preserved (indented with 2 spaces) to match copilot CLI's own output
 - No data loss — fields the tool doesn't understand are never dropped
@@ -45,10 +57,19 @@ Auto-detecting the schema from the copilot CLI itself ensures `ccc` stays compat
 ## Usage Examples
 
 ```go
-// Load existing config
+// Load user-level config (existing behavior)
 cfg, err := config.LoadConfig(config.DefaultPath())
 if err != nil {
     // handle error
+}
+
+// Load project-level config
+projectDir, _ := os.Getwd()
+projectCfg, err := config.LoadConfig(config.ProjectSettingsPath(projectDir))
+if err != nil {
+    if errors.Is(err, config.ErrConfigNotFound) {
+        projectCfg = config.NewConfig() // empty config — file will be created on save
+    }
 }
 
 // Detect schema
@@ -60,7 +81,7 @@ if err != nil {
 // Modify a field
 cfg.Set("model", "claude-sonnet-4.5")
 
-// Save back
+// Save back to the active scope's path
 err = config.SaveConfig(config.DefaultPath(), cfg)
 ```
 
@@ -87,3 +108,4 @@ err = config.SaveConfig(config.DefaultPath(), cfg)
 ## Related ADRs
 
 - [ADR-0002-go-charm-tui-stack](../ADR/ADR-0002-go-charm-tui-stack.md)
+- [ADR-0008-multi-scope-configuration](../ADR/ADR-0008-multi-scope-configuration.md)
