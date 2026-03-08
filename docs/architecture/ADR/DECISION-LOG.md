@@ -11,6 +11,7 @@ This file is the single registry of all architectural decisions and core-compone
 | ADR-0004 | [TUI Multi-View Tab Navigation](ADR-0004-tui-multi-view-navigation.md) | Accepted | 2026-02-20 |
 | ADR-0005 | [Release Automation Tooling (GoReleaser)](ADR-0005-release-automation-tooling.md) | Accepted | 2025-06-30 |
 | ADR-0006 | [Binary Signing and Supply-Chain Security Strategy](ADR-0006-binary-signing-supply-chain-security.md) | Accepted | 2025-06-30 |
+| ADR-0007 | [Windows Platform Support](ADR-0007-windows-platform-support.md) | Accepted | 2025-07-11 |
 
 ## Core-Components
 
@@ -68,3 +69,8 @@ Short, actionable statements derived from ADRs and core-components. More than on
 | 38 | Use govulncheck with SARIF output for Go vulnerability scanning | CC-0006 | 2025-06-30 |
 | 39 | Require SHA256 checksum verification in the install script before extracting binaries | CC-0006 | 2025-06-30 |
 | 40 | Cross-compile for linux/darwin/windows on amd64/arm64 (exclude windows/arm64) | CC-0006 | 2025-06-30 |
+| 41 | Run CI test and build-check jobs on both ubuntu-latest and windows-latest | ADR-0007 | 2025-07-11 |
+| 42 | Detect MINGW/MSYS in install.sh and redirect Windows users to install.ps1 | ADR-0007 | 2025-07-11 |
+| 43 | Provide install.ps1 as the native PowerShell installer for Windows | ADR-0007 | 2025-07-11 |
+| 44 | Install ccc.exe to $env:LOCALAPPDATA\Programs\ccc without requiring admin | ADR-0007 | 2025-07-11 |
+| 45 | Require SHA256 checksum verification in install.ps1 via Get-FileHash | ADR-0007 | 2025-07-11 |
