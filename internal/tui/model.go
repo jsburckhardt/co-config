@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -14,6 +15,62 @@ import (
 	"github.com/jsburckhardt/co-config/internal/sensitive"
 )
 
+// categoryExact maps exact field names to their TUI category.
+var categoryExact = map[string]string{
+	"model":            "Model & AI",
+	"reasoning_effort": "Model & AI",
+	"stream":           "Model & AI",
+	"experimental":     "Model & AI",
+
+	"theme":                 "Display",
+	"alt_screen":            "Display",
+	"render_markdown":       "Display",
+	"screen_reader":         "Display",
+	"banner":                "Display",
+	"beep":                  "Display",
+	"update_terminal_title": "Display",
+	"streamer_mode":         "Display",
+	"mouse":                 "Display",
+
+	"allowed_urls":    "URLs & Permissions",
+	"denied_urls":     "URLs & Permissions",
+	"trusted_folders": "URLs & Permissions",
+}
+
+// categoryPrefix maps field name prefixes to their TUI category.
+// Checked only when no exact match is found.
+var categoryPrefix = map[string]string{
+	"custom_agents.": "URLs & Permissions",
+	"ide.":           "IDE Integration",
+}
+
+// categoryOrder defines the display order of categories in the TUI.
+var categoryOrder = []string{
+	"Model & AI",
+	"Display",
+	"IDE Integration",
+	"URLs & Permissions",
+	"General",
+	"Sensitive",
+}
+
+// fieldCategory returns the TUI category for a given field name.
+func fieldCategory(name string) string {
+	if cat, ok := categoryExact[name]; ok {
+		return cat
+	}
+	bestPrefix := ""
+	for prefix := range categoryPrefix {
+		if strings.HasPrefix(name, prefix) && len(prefix) > len(bestPrefix) {
+			bestPrefix = prefix
+		}
+	}
+	if bestPrefix != "" {
+		return categoryPrefix[bestPrefix]
+	}
+	return "General"
+}
+
 // Model is the main Bubbletea model for the two-panel TUI.
 type Model struct {
 	cfg        *config.Config
@@ -21,6 +78,10 @@ type Model struct {
 	envVars    []copilot.EnvVarInfo
 	version    string
 	configPath string
+
+	activeScope config.Scope
+	scopePaths  map[config.Scope]string
+	projectDir  string
 
 	state            State
 	listPanel        *ListPanel
@@ -36,7 +97,7 @@ type Model struct {
 }
 
 // NewModel creates a new TUI model with two-panel layout.
-func NewModel(cfg *config.Config, schema []copilot.SchemaField, envVars []copilot.EnvVarInfo, version, configPath string) *Model {
+func NewModel(cfg *config.Config, schema []copilot.SchemaField, envVars []copilot.EnvVarInfo, version, configPath string, scope config.Scope, projectDir string) *Model {
 	entries := buildEntries(cfg, schema)
 	lp := NewListPanel(entries)
 	dp := NewDetailPanel()
@@ -52,6 +113,13 @@ func NewModel(cfg *config.Config, schema []copilot.SchemaField, envVars []copilo
 		envVars:     envVars,
 		version:     version,
 		configPath:  configPath,
+		activeScope: scope,
+		projectDir:  projectDir,
+		scopePaths: map[config.Scope]string{
+			config.ScopeUser:         config.ScopePathFor(config.ScopeUser, projectDir),
+			config.ScopeProject:      config.ScopePathFor(config.ScopeProject, projectDir),
+			config.ScopeProjectLocal: config.ScopePathFor(config.ScopeProjectLocal, projectDir),
+		},
 		state:       StateBrowsing,
 		listPanel:   lp,
 		detailPanel: dp,
@@ -61,12 +129,9 @@ func NewModel(cfg *config.Config, schema []copilot.SchemaField, envVars []copilo
 }
 
 func buildEntries(cfg *config.Config, schema []copilot.SchemaField) []listEntry {
-	categories := map[string][]ConfigItem{
-		"Model & AI":         {},
-		"Display":            {},
-		"URLs & Permissions": {},
-		"General":            {},
-		"Sensitive":          {},
+	categories := map[string][]ConfigItem{}
+	for _, cat := range categoryOrder {
+		categories[cat] = []ConfigItem{}
 	}
 
 	sorted := make([]copilot.SchemaField, len(schema))
@@ -83,22 +148,16 @@ func buildEntries(cfg *config.Config, schema []copilot.SchemaField) []listEntry 
 			isToken = sensitive.LooksLikeToken(s)
 		}
 
-		switch {
-		case isSens || isToken:
+		if isSens || isToken {
 			categories["Sensitive"] = append(categories["Sensitive"], item)
-		case isModelField(sf.Name):
-			categories["Model & AI"] = append(categories["Model & AI"], item)
-		case isURLField(sf.Name):
-			categories["URLs & Permissions"] = append(categories["URLs & Permissions"], item)
-		case isDisplayField(sf.Name):
-			categories["Display"] = append(categories["Display"], item)
-		default:
-			categories["General"] = append(categories["General"], item)
+		} else {
+			cat := fieldCategory(sf.Name)
+			categories[cat] = append(categories[cat], item)
 		}
 	}
 
 	var entries []listEntry
-	for _, cat := range []string{"Model & AI", "Display", "URLs & Permissions", "General", "Sensitive"} {
+	for _, cat := range categoryOrder {
 		items := categories[cat]
 		if len(items) > 0 {
 			entries = append(entries, listEntry{isHeader: true, header: cat})
@@ -108,33 +167,6 @@ func buildEntries(cfg *config.Config, schema []copilot.SchemaField) []listEntry 
 		}
 	}
 	return entries
-}
-
-func isModelField(name string) bool {
-	for _, f := range []string{"model", "reasoning_effort", "parallel_tool_execution", "stream", "experimental"} {
-		if f == name {
-			return true
-		}
-	}
-	return false
-}
-
-func isURLField(name string) bool {
-	for _, f := range []string{"allowed_urls", "denied_urls", "trusted_folders"} {
-		if f == name {
-			return true
-		}
-	}
-	return name == "custom_agents" || (len(name) > 13 && name[:13] == "custom_agents")
-}
-
-func isDisplayField(name string) bool {
-	for _, f := range []string{"theme", "alt_screen", "render_markdown", "screen_reader", "banner", "beep", "update_terminal_title", "streamer_mode"} {
-		if f == name {
-			return true
-		}
-	}
-	return false
 }
 
 func isSensitiveItem(item ConfigItem) bool {
@@ -171,6 +203,19 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.modelPickerPanel.Update(msg)
 	}
 	return m, nil
+}
+
+// nextScope returns the next scope in the cycling order:
+// ScopeUser → ScopeProject → ScopeProjectLocal → ScopeUser.
+func nextScope(s config.Scope) config.Scope {
+	switch s {
+	case config.ScopeUser:
+		return config.ScopeProject
+	case config.ScopeProject:
+		return config.ScopeProjectLocal
+	default:
+		return config.ScopeUser
+	}
 }
 
 func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
@@ -215,6 +260,26 @@ func (m *Model) handleKeyPress(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		case "right", "l", "tab":
 			m.state = StateEnvVars
 			slog.Info("switched to env vars view")
+		case "S":
+			m.activeScope = nextScope(m.activeScope)
+			m.configPath = m.scopePaths[m.activeScope]
+			cfg, err := config.LoadConfig(m.configPath)
+			if err != nil {
+				if errors.Is(err, config.ErrConfigNotFound) {
+					cfg = config.NewConfig()
+				} else {
+					m.err = err
+					return m, nil
+				}
+			}
+			m.cfg = cfg
+			entries := buildEntries(m.cfg, m.schema)
+			m.listPanel = NewListPanel(entries)
+			m.listPanel.SetSize(m.listPanelWidth(), m.listPanelHeight())
+			m.syncDetailPanel()
+			m.saved = false
+			m.err = nil
+			slog.Info("scope switched", "scope", m.activeScope.String(), "path", m.configPath)
 		}
 	case StateEditing:
 		switch k {
@@ -462,6 +527,9 @@ func (m *Model) View() string {
 	if m.version != "" {
 		version = versionStyle.Render("Copilot CLI v" + m.version)
 	}
+	scopeLabel := scopeLabelStyle.Render("[" + m.activeScope.Label() + "]")
+	configPathDisplay := versionStyle.Render(m.configPath)
+	version += "  " + scopeLabel + " " + configPathDisplay
 	if m.saved {
 		version += "  " + savedStyle.Render("✓ Saved")
 	}
@@ -538,7 +606,7 @@ func (m *Model) View() string {
 func (k KeyMap) ShortHelp(state State, fieldType string) []key.Binding {
 	switch state {
 	case StateBrowsing:
-		return []key.Binding{k.Up, k.Down, k.Enter, k.Right, k.Tab, k.Save, k.Quit}
+		return []key.Binding{k.Up, k.Down, k.Enter, k.ScopeSwitch, k.Right, k.Tab, k.Save, k.Quit}
 	case StateEditing:
 		if fieldType != "list" {
 			return []key.Binding{k.Confirm, k.Escape, k.Save, k.Quit}
