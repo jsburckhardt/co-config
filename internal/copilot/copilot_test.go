@@ -24,7 +24,7 @@ func TestParseVersion(t *testing.T) {
 	}
 }
 
-// UT-COP-002: ParseSchema field count >= 15 and verify key fields exist
+// UT-COP-002: ParseSchema field count >= 17 and verify key fields exist
 func TestParseSchemaFieldCount(t *testing.T) {
 	data, err := os.ReadFile("testdata/copilot-help-config.txt")
 	if err != nil {
@@ -36,7 +36,7 @@ func TestParseSchemaFieldCount(t *testing.T) {
 		t.Fatalf("ParseSchema failed: %v", err)
 	}
 
-	minExpected := 15
+	minExpected := 17
 	if len(fields) < minExpected {
 		t.Errorf("Expected at least %d fields, got %d", minExpected, len(fields))
 		for i, f := range fields {
@@ -299,7 +299,7 @@ func TestParseVersionMalformed(t *testing.T) {
 	}
 }
 
-// UT-COP-010: ParseEnvVars with full fixture returns 11 entries
+// UT-COP-010: ParseEnvVars with full fixture returns 13 entries
 func TestParseEnvVarsFullFixture(t *testing.T) {
 	data, err := os.ReadFile("testdata/copilot-help-environment.txt")
 	if err != nil {
@@ -311,7 +311,7 @@ func TestParseEnvVarsFullFixture(t *testing.T) {
 		t.Fatalf("ParseEnvVars failed: %v", err)
 	}
 
-	expected := 11
+	expected := 13
 	if len(entries) != expected {
 		t.Errorf("Expected %d entries, got %d", expected, len(entries))
 		for i, e := range entries {
@@ -480,5 +480,148 @@ func TestParseEnvVarsMalformed(t *testing.T) {
 		if entries != nil {
 			t.Errorf("Expected nil entries for input %q, got %v", tc, entries)
 		}
+	}
+}
+
+// UT-COP-017: ParseSchema reasoning_effort field is parsed as enum with 4 options and default "medium"
+func TestParseSchemaReasoningEffortField(t *testing.T) {
+	data, err := os.ReadFile("testdata/copilot-help-config.txt")
+	if err != nil {
+		t.Fatalf("Failed to read test data: %v", err)
+	}
+
+	fields, err := ParseSchema(string(data))
+	if err != nil {
+		t.Fatalf("ParseSchema failed: %v", err)
+	}
+
+	var field *SchemaField
+	for i := range fields {
+		if fields[i].Name == "reasoning_effort" {
+			field = &fields[i]
+			break
+		}
+	}
+
+	if field == nil {
+		t.Fatal("reasoning_effort field not found")
+	}
+
+	if field.Type != "enum" {
+		t.Errorf("Expected Type %q, got %q", "enum", field.Type)
+	}
+
+	if field.Default != "medium" {
+		t.Errorf("Expected Default %q, got %q", "medium", field.Default)
+	}
+
+	expectedOptions := []string{"low", "medium", "high", "xhigh"}
+	if len(field.Options) != len(expectedOptions) {
+		t.Fatalf("Expected %d options, got %d: %v", len(expectedOptions), len(field.Options), field.Options)
+	}
+
+	for i, expected := range expectedOptions {
+		if field.Options[i] != expected {
+			t.Errorf("Option %d: expected %q, got %q", i, expected, field.Options[i])
+		}
+	}
+}
+
+// UT-COP-018: ParseSchema store_token_plaintext field is parsed as bool with default "false"
+func TestParseSchemaStoreTokenPlaintextField(t *testing.T) {
+	data, err := os.ReadFile("testdata/copilot-help-config.txt")
+	if err != nil {
+		t.Fatalf("Failed to read test data: %v", err)
+	}
+
+	fields, err := ParseSchema(string(data))
+	if err != nil {
+		t.Fatalf("ParseSchema failed: %v", err)
+	}
+
+	var field *SchemaField
+	for i := range fields {
+		if fields[i].Name == "store_token_plaintext" {
+			field = &fields[i]
+			break
+		}
+	}
+
+	if field == nil {
+		t.Fatal("store_token_plaintext field not found")
+	}
+
+	if field.Type != "bool" {
+		t.Errorf("Expected Type %q, got %q", "bool", field.Type)
+	}
+
+	if field.Default != "false" {
+		t.Errorf("Expected Default %q, got %q", "false", field.Default)
+	}
+}
+
+// UT-COP-019: ParseEnvVars COPILOT_SKILLS_DIRS entry exists with description containing "directories" or "skills"
+func TestParseEnvVarsSkillsDirs(t *testing.T) {
+	data, err := os.ReadFile("testdata/copilot-help-environment.txt")
+	if err != nil {
+		t.Fatalf("Failed to read test data: %v", err)
+	}
+
+	entries, err := ParseEnvVars(string(data))
+	if err != nil {
+		t.Fatalf("ParseEnvVars failed: %v", err)
+	}
+
+	var entry *EnvVarInfo
+	for i := range entries {
+		if len(entries[i].Names) > 0 && entries[i].Names[0] == "COPILOT_SKILLS_DIRS" {
+			entry = &entries[i]
+			break
+		}
+	}
+
+	if entry == nil {
+		t.Fatal("COPILOT_SKILLS_DIRS entry not found")
+	}
+
+	if entry.Description == "" {
+		t.Error("Expected non-empty description")
+	}
+
+	if !strings.Contains(entry.Description, "directories") && !strings.Contains(entry.Description, "skills") {
+		t.Errorf("Expected description to contain %q or %q, got %q", "directories", "skills", entry.Description)
+	}
+}
+
+// UT-COP-020: ParseEnvVars COPILOT_CLI_ENABLED_FEATURE_FLAGS entry exists with description containing "feature flags"
+func TestParseEnvVarsEnabledFeatureFlags(t *testing.T) {
+	data, err := os.ReadFile("testdata/copilot-help-environment.txt")
+	if err != nil {
+		t.Fatalf("Failed to read test data: %v", err)
+	}
+
+	entries, err := ParseEnvVars(string(data))
+	if err != nil {
+		t.Fatalf("ParseEnvVars failed: %v", err)
+	}
+
+	var entry *EnvVarInfo
+	for i := range entries {
+		if len(entries[i].Names) > 0 && entries[i].Names[0] == "COPILOT_CLI_ENABLED_FEATURE_FLAGS" {
+			entry = &entries[i]
+			break
+		}
+	}
+
+	if entry == nil {
+		t.Fatal("COPILOT_CLI_ENABLED_FEATURE_FLAGS entry not found")
+	}
+
+	if entry.Description == "" {
+		t.Error("Expected non-empty description")
+	}
+
+	if !strings.Contains(entry.Description, "feature flags") {
+		t.Errorf("Expected description to contain %q, got %q", "feature flags", entry.Description)
 	}
 }
