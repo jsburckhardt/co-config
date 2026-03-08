@@ -61,6 +61,12 @@ detect_os() {
   case "${OS_RAW}" in
     Linux)  OS="linux" ;;
     Darwin) OS="darwin" ;;
+    MINGW*|MSYS*|CYGWIN*)
+      info "Windows detected (via Git Bash / MSYS2)."
+      info "Please use the PowerShell installer instead:"
+      info "  irm https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.ps1 | iex"
+      exit 1
+      ;;
     *)      error "Unsupported operating system: ${OS_RAW}" ;;
   esac
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -177,14 +178,16 @@ func TestSaveConfig_Format(t *testing.T) {
 		t.Error("expected trailing newline")
 	}
 
-	// Check file permissions
-	info, err := os.Stat(tmpPath)
-	if err != nil {
-		t.Fatalf("Stat failed: %v", err)
-	}
-	perm := info.Mode().Perm()
-	if perm != 0600 {
-		t.Errorf("file permissions = %o, want 0600", perm)
+	// Check file permissions (Unix only — Windows does not support POSIX permission bits)
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(tmpPath)
+		if err != nil {
+			t.Fatalf("Stat failed: %v", err)
+		}
+		perm := info.Mode().Perm()
+		if perm != 0600 {
+			t.Errorf("file permissions = %o, want 0600", perm)
+		}
 	}
 }
 
@@ -289,7 +292,7 @@ func TestDefaultPath_WithXDG(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", "/custom/config")
 
 	path := DefaultPath()
-	expected := "/custom/config/copilot/config.json"
+	expected := filepath.Join("/custom/config", "copilot", "config.json")
 	if path != expected {
 		t.Errorf("DefaultPath() = %q, want %q", path, expected)
 	}

@@ -21,6 +21,18 @@ curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install
 curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.sh | sh -s -- --version v1.0.0
 ```
 
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.ps1 | iex
+```
+
+Version-pinned:
+
+```powershell
+$env:CCC_VERSION = "v1.0.0"; irm https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.ps1 | iex
+```
+
 ### Go install
 
 ```bash

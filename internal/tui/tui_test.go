@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -1648,7 +1649,15 @@ func TestSaveFailureKeepsModifiedFlags(t *testing.T) {
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
 	}
 
-	invalidPath := filepath.Join(string(os.PathSeparator), "nonexistent", "deep", "path", "config.json")
+	// Use a path guaranteed to be invalid on both Unix and Windows.
+	// On Unix, /nonexistent/... fails because the dir doesn't exist and isn't writable.
+	// On Windows, Z:\ is a non-existent drive letter that MkdirAll cannot create.
+	var invalidPath string
+	if runtime.GOOS == "windows" {
+		invalidPath = `Z:\nonexistent\deep\path\config.json`
+	} else {
+		invalidPath = filepath.Join(string(os.PathSeparator), "nonexistent", "deep", "path", "config.json")
+	}
 
 	model := NewModel(cfg, schema, nil, "0.0.412", invalidPath)
 	model.windowWidth = 100
