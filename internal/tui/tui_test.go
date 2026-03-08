@@ -23,7 +23,7 @@ func TestNewModel(t *testing.T) {
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}, Description: "AI model"},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 
 	if model.cfg != cfg {
 		t.Error("NewModel did not store config correctly")
@@ -46,7 +46,7 @@ func TestStateMachineInitialization(t *testing.T) {
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 
 	if model.state != StateBrowsing {
 		t.Errorf("Expected initial state Browsing, got %v", model.state)
@@ -118,7 +118,7 @@ func TestSensitiveFieldsInList(t *testing.T) {
 // UT-TUI-005: Alt-screen compatibility
 func TestAltScreenCompatibility(t *testing.T) {
 	cfg := config.NewConfig()
-	model := NewModel(cfg, []copilot.SchemaField{}, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, []copilot.SchemaField{}, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 
 	cmd := model.Init()
 	if cmd != nil {
@@ -133,7 +133,7 @@ func TestWindowResize(t *testing.T) {
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 
 	msg := tea.WindowSizeMsg{Width: 120, Height: 40}
 	newModel, _ := model.Update(msg)
@@ -156,7 +156,7 @@ func TestBrowsingToEditingTransition(t *testing.T) {
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -184,7 +184,7 @@ func TestEditingToBrowsingTransition(t *testing.T) {
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.state = StateEditing
 
 	msg := tea.KeyMsg{Type: tea.KeyEsc}
@@ -361,7 +361,7 @@ func TestViewNoGearEmoji(t *testing.T) {
 	schema := []copilot.SchemaField{
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 	}
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -379,7 +379,7 @@ func TestViewRendersWithIcon(t *testing.T) {
 	schema := []copilot.SchemaField{
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 	}
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -403,7 +403,7 @@ func TestViewRendersFramedHeader(t *testing.T) {
 	schema := []copilot.SchemaField{
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 	}
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -425,7 +425,7 @@ func TestViewRendersAt80x24(t *testing.T) {
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 		{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark"}},
 	}
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 80
 	model.windowHeight = 24
 	model.updateSizes()
@@ -453,7 +453,7 @@ func TestPanelHeightOverhead(t *testing.T) {
 			schema := []copilot.SchemaField{
 				{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 			}
-			model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+			model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 			msg := tea.WindowSizeMsg{Width: tt.width, Height: tt.height}
 			newModel, _ := model.Update(msg)
 			m := newModel.(*Model)
@@ -483,7 +483,7 @@ func TestSmallTerminalFloor(t *testing.T) {
 			schema := []copilot.SchemaField{
 				{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 			}
-			model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+			model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 			msg := tea.WindowSizeMsg{Width: tt.width, Height: tt.height}
 			newModel, _ := model.Update(msg)
 			m := newModel.(*Model)
@@ -612,7 +612,7 @@ func TestViewRenders(t *testing.T) {
 		{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto", "dark"}},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -887,7 +887,7 @@ func TestBrowsingRightToEnvVars(t *testing.T) {
 	envVars := []copilot.EnvVarInfo{
 		{Names: []string{"COPILOT_MODEL"}, Description: "test"},
 	}
-	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -909,7 +909,7 @@ func TestBrowsingLToEnvVars(t *testing.T) {
 	envVars := []copilot.EnvVarInfo{
 		{Names: []string{"COPILOT_MODEL"}, Description: "test"},
 	}
-	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}}
 	newModel, _ := model.Update(msg)
@@ -928,7 +928,7 @@ func TestBrowsingTabToEnvVars(t *testing.T) {
 	envVars := []copilot.EnvVarInfo{
 		{Names: []string{"COPILOT_MODEL"}, Description: "test"},
 	}
-	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 
 	msg := tea.KeyMsg{Type: tea.KeyTab}
 	newModel, _ := model.Update(msg)
@@ -947,7 +947,7 @@ func TestEnvVarsLeftToBrowsing(t *testing.T) {
 	envVars := []copilot.EnvVarInfo{
 		{Names: []string{"COPILOT_MODEL"}, Description: "test"},
 	}
-	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.state = StateEnvVars
 
 	msg := tea.KeyMsg{Type: tea.KeyLeft}
@@ -967,7 +967,7 @@ func TestEnvVarsHToBrowsing(t *testing.T) {
 	envVars := []copilot.EnvVarInfo{
 		{Names: []string{"COPILOT_MODEL"}, Description: "test"},
 	}
-	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.state = StateEnvVars
 
 	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}}
@@ -987,7 +987,7 @@ func TestEnvVarsTabToBrowsing(t *testing.T) {
 	envVars := []copilot.EnvVarInfo{
 		{Names: []string{"COPILOT_MODEL"}, Description: "test"},
 	}
-	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.state = StateEnvVars
 
 	msg := tea.KeyMsg{Type: tea.KeyTab}
@@ -1005,7 +1005,7 @@ func TestEditingRightNoTransition(t *testing.T) {
 	schema := []copilot.SchemaField{
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
 	}
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.state = StateEditing
 
 	msg := tea.KeyMsg{Type: tea.KeyRight}
@@ -1023,7 +1023,7 @@ func TestEditingLeftNoTransition(t *testing.T) {
 	schema := []copilot.SchemaField{
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
 	}
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.state = StateEditing
 
 	msg := tea.KeyMsg{Type: tea.KeyLeft}
@@ -1043,7 +1043,7 @@ func TestEnvVarsCtrlSNoSave(t *testing.T) {
 	envVars := []copilot.EnvVarInfo{
 		{Names: []string{"COPILOT_MODEL"}, Description: "test"},
 	}
-	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.state = StateEnvVars
 	model.saved = false
 
@@ -1064,7 +1064,7 @@ func TestViewInEnvVarsState(t *testing.T) {
 	envVars := []copilot.EnvVarInfo{
 		{Names: []string{"COPILOT_MODEL"}, Description: "optionally set the agent model"},
 	}
-	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, envVars, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1145,7 +1145,7 @@ func TestNewModelNilEnvVars(t *testing.T) {
 	schema := []copilot.SchemaField{
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
 	}
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	if model == nil {
 		t.Fatal("NewModel with nil envVars should not return nil")
 	}
@@ -1163,7 +1163,7 @@ func TestEnterCommitsEnumField(t *testing.T) {
 		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "gpt-3.5-turbo"}},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1192,7 +1192,7 @@ func TestEnterCommitsStringField(t *testing.T) {
 		{Name: "theme", Type: "string", Default: ""},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1221,7 +1221,7 @@ func TestEnterCommitsBoolField(t *testing.T) {
 		{Name: "stream", Type: "bool", Default: "true"},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1250,7 +1250,7 @@ func TestEnterOnListFieldStaysEditing(t *testing.T) {
 		{Name: "allowed_urls", Type: "list"},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1383,7 +1383,7 @@ func TestSavedFlagClearedAfterCommit(t *testing.T) {
 	}
 
 	t.Run("Esc commit clears saved", func(t *testing.T) {
-		model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+		model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 		model.windowWidth = 100
 		model.windowHeight = 30
 		model.updateSizes()
@@ -1403,7 +1403,7 @@ func TestSavedFlagClearedAfterCommit(t *testing.T) {
 	})
 
 	t.Run("Enter commit clears saved", func(t *testing.T) {
-		model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+		model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 		model.windowWidth = 100
 		model.windowHeight = 30
 		model.updateSizes()
@@ -1553,7 +1553,7 @@ func TestPostSaveReloadPreservesCursor(t *testing.T) {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", tmpFile)
+	model := NewModel(cfg, schema, nil, "0.0.412", tmpFile, config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1600,7 +1600,7 @@ func TestModifiedFlagsClearedAfterSave(t *testing.T) {
 		t.Fatalf("Failed to write initial config: %v", err)
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", tmpFile)
+	model := NewModel(cfg, schema, nil, "0.0.412", tmpFile, config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1659,7 +1659,7 @@ func TestSaveFailureKeepsModifiedFlags(t *testing.T) {
 		invalidPath = filepath.Join(string(os.PathSeparator), "nonexistent", "deep", "path", "config.json")
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", invalidPath)
+	model := NewModel(cfg, schema, nil, "0.0.412", invalidPath, config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1705,7 +1705,7 @@ func TestEnterOnLargeEnumTransitionsToModelPicker(t *testing.T) {
 			Description: "AI model"},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1745,7 +1745,7 @@ func TestEnterOnSmallEnumTransitionsToEditing(t *testing.T) {
 			Description: "Color theme"},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1814,7 +1814,7 @@ func TestEscFromModelPickerConfirmsAndReturns(t *testing.T) {
 			Description: "AI model"},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1856,7 +1856,7 @@ func TestEnterFromModelPickerConfirmsAndReturns(t *testing.T) {
 			Description: "AI model"},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1902,7 +1902,7 @@ func TestViewInModelPickerAtVariousSizes(t *testing.T) {
 					Description: "AI model"},
 			}
 
-			model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json")
+			model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "")
 			sizeMsg := tea.WindowSizeMsg{Width: sz.width, Height: sz.height}
 			newModel, _ := model.Update(sizeMsg)
 			m := newModel.(*Model)
@@ -1940,7 +1940,7 @@ func TestCtrlSSaveFromModelPicker(t *testing.T) {
 			Description: "AI model"},
 	}
 
-	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/nonexistent/config.json")
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/nonexistent/config.json", config.ScopeUser, "")
 	model.windowWidth = 100
 	model.windowHeight = 30
 	model.updateSizes()
@@ -1963,5 +1963,548 @@ func TestCtrlSSaveFromModelPicker(t *testing.T) {
 	// Save handler was reached (either succeeded or failed with error)
 	if !m.saved && m.err == nil {
 		t.Error("Expected save handler to be executed (either saved=true or err!=nil)")
+	}
+}
+
+// UT-TUI-080: fieldCategory("mouse") returns "Display"
+func TestFieldCategoryMouse(t *testing.T) {
+	got := fieldCategory("mouse")
+	if got != "Display" {
+		t.Errorf("fieldCategory(\"mouse\") = %q, want \"Display\"", got)
+	}
+}
+
+// UT-TUI-081: fieldCategory("ide.auto_connect") returns "IDE Integration"
+func TestFieldCategoryIDEAutoConnect(t *testing.T) {
+	got := fieldCategory("ide.auto_connect")
+	if got != "IDE Integration" {
+		t.Errorf("fieldCategory(\"ide.auto_connect\") = %q, want \"IDE Integration\"", got)
+	}
+}
+
+// UT-TUI-082: fieldCategory("ide.open_diff_on_edit") returns "IDE Integration"
+func TestFieldCategoryIDEOpenDiffOnEdit(t *testing.T) {
+	got := fieldCategory("ide.open_diff_on_edit")
+	if got != "IDE Integration" {
+		t.Errorf("fieldCategory(\"ide.open_diff_on_edit\") = %q, want \"IDE Integration\"", got)
+	}
+}
+
+// UT-TUI-083: fieldCategory("custom_agents.default_local_only") returns "URLs & Permissions"
+func TestFieldCategoryCustomAgents(t *testing.T) {
+	got := fieldCategory("custom_agents.default_local_only")
+	if got != "URLs & Permissions" {
+		t.Errorf("fieldCategory(\"custom_agents.default_local_only\") = %q, want \"URLs & Permissions\"", got)
+	}
+}
+
+// UT-TUI-084: fieldCategory("store_token_plaintext") returns "General"
+func TestFieldCategoryStoreTokenPlaintext(t *testing.T) {
+	got := fieldCategory("store_token_plaintext")
+	if got != "General" {
+		t.Errorf("fieldCategory(\"store_token_plaintext\") = %q, want \"General\"", got)
+	}
+}
+
+// UT-TUI-085: fieldCategory unknown field returns "General"
+func TestFieldCategoryUnknown(t *testing.T) {
+	got := fieldCategory("completely_unknown_field")
+	if got != "General" {
+		t.Errorf("fieldCategory(\"completely_unknown_field\") = %q, want \"General\"", got)
+	}
+}
+
+// UT-TUI-086: fieldCategory("model") returns "Model & AI"
+func TestFieldCategoryModel(t *testing.T) {
+	got := fieldCategory("model")
+	if got != "Model & AI" {
+		t.Errorf("fieldCategory(\"model\") = %q, want \"Model & AI\"", got)
+	}
+}
+
+// UT-TUI-087: buildEntries places mouse under Display header
+func TestBuildEntriesMouseUnderDisplay(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("mouse", true)
+	schema := []copilot.SchemaField{
+		{Name: "mouse", Type: "bool", Default: "true", Description: "Enable mouse"},
+	}
+
+	entries := buildEntries(cfg, schema)
+
+	// Find the mouse entry and verify its preceding header is "Display"
+	for i, e := range entries {
+		if !e.isHeader && e.item.Field.Name == "mouse" {
+			// Look back to find the nearest header
+			foundHeader := ""
+			for j := i - 1; j >= 0; j-- {
+				if entries[j].isHeader {
+					foundHeader = entries[j].header
+					break
+				}
+			}
+			if foundHeader != "Display" {
+				t.Errorf("mouse entry is under header %q, want \"Display\"", foundHeader)
+			}
+			return
+		}
+	}
+	t.Error("mouse entry not found in buildEntries output")
+}
+
+// UT-TUI-088: buildEntries places ide.auto_connect under IDE Integration header
+func TestBuildEntriesIDEAutoConnectUnderIDEIntegration(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{
+		{Name: "ide.auto_connect", Type: "bool", Default: "true", Description: "Auto connect to IDE"},
+	}
+
+	entries := buildEntries(cfg, schema)
+
+	for i, e := range entries {
+		if !e.isHeader && e.item.Field.Name == "ide.auto_connect" {
+			foundHeader := ""
+			for j := i - 1; j >= 0; j-- {
+				if entries[j].isHeader {
+					foundHeader = entries[j].header
+					break
+				}
+			}
+			if foundHeader != "IDE Integration" {
+				t.Errorf("ide.auto_connect entry is under header %q, want \"IDE Integration\"", foundHeader)
+			}
+			return
+		}
+	}
+	t.Error("ide.auto_connect entry not found in buildEntries output")
+}
+
+// UT-TUI-089: buildEntries category order matches categoryOrder
+func TestBuildEntriesCategoryOrder(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+		{Name: "theme", Type: "enum", Default: "auto", Options: []string{"auto"}},
+		{Name: "ide.auto_connect", Type: "bool", Default: "true"},
+		{Name: "allowed_urls", Type: "list"},
+		{Name: "auto_update", Type: "bool", Default: "true"},
+	}
+
+	entries := buildEntries(cfg, schema)
+
+	// Collect headers in order
+	var headers []string
+	for _, e := range entries {
+		if e.isHeader {
+			headers = append(headers, e.header)
+		}
+	}
+
+	expected := []string{"Model & AI", "Display", "IDE Integration", "URLs & Permissions", "General"}
+	if len(headers) != len(expected) {
+		t.Fatalf("got %d headers %v, want %d headers %v", len(headers), headers, len(expected), expected)
+	}
+	for i, h := range headers {
+		if h != expected[i] {
+			t.Errorf("header[%d] = %q, want %q", i, h, expected[i])
+		}
+	}
+}
+
+// UT-TUI-090: parallel_tool_execution not in categoryExact
+func TestParallelToolExecutionNotInCategoryExact(t *testing.T) {
+	_, ok := categoryExact["parallel_tool_execution"]
+	if ok {
+		t.Error("parallel_tool_execution should not be in categoryExact (ghost field)")
+	}
+}
+
+// UT-TUI-091: NewModel with ScopeUser sets activeScope correctly
+func TestNewModelScopeUser(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}}}
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "/tmp")
+	if model.activeScope != config.ScopeUser {
+		t.Errorf("expected activeScope ScopeUser, got %v", model.activeScope)
+	}
+}
+
+// UT-TUI-092: NewModel with ScopeProject sets activeScope correctly
+func TestNewModelScopeProject(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}}}
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeProject, "/tmp/project")
+	if model.activeScope != config.ScopeProject {
+		t.Errorf("expected activeScope ScopeProject, got %v", model.activeScope)
+	}
+}
+
+// UT-TUI-093: NewModel pre-computes scopePaths for all scopes
+func TestNewModelScopePaths(t *testing.T) {
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}}}
+	projectDir := "/tmp/project"
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, projectDir)
+
+	// Verify all three scope paths exist
+	if _, ok := model.scopePaths[config.ScopeUser]; !ok {
+		t.Error("scopePaths missing ScopeUser key")
+	}
+	if _, ok := model.scopePaths[config.ScopeProject]; !ok {
+		t.Error("scopePaths missing ScopeProject key")
+	}
+	if _, ok := model.scopePaths[config.ScopeProjectLocal]; !ok {
+		t.Error("scopePaths missing ScopeProjectLocal key")
+	}
+
+	// Verify values match expected paths
+	if got, want := model.scopePaths[config.ScopeUser], config.DefaultPath(); got != want {
+		t.Errorf("scopePaths[ScopeUser] = %q, want %q", got, want)
+	}
+	if got, want := model.scopePaths[config.ScopeProject], config.ProjectSettingsPath(projectDir); got != want {
+		t.Errorf("scopePaths[ScopeProject] = %q, want %q", got, want)
+	}
+	if got, want := model.scopePaths[config.ScopeProjectLocal], config.ProjectLocalSettingsPath(projectDir); got != want {
+		t.Errorf("scopePaths[ScopeProjectLocal] = %q, want %q", got, want)
+	}
+}
+
+// UT-TUI-094: S key in StateBrowsing cycles activeScope from ScopeUser to ScopeProject
+func TestScopeSwitch_UserToProject(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}}}
+	model := NewModel(cfg, schema, nil, "0.0.412", config.DefaultPath(), config.ScopeUser, tmpDir)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	if model.activeScope != config.ScopeUser {
+		t.Fatalf("expected initial activeScope ScopeUser, got %v", model.activeScope)
+	}
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}}
+	newModel, _ := model.Update(msg)
+	m := newModel.(*Model)
+
+	if m.activeScope != config.ScopeProject {
+		t.Errorf("expected activeScope ScopeProject after S key, got %v", m.activeScope)
+	}
+}
+
+// UT-TUI-095: Scope cycling through all three scopes returns to ScopeUser
+func TestScopeSwitch_FullCycle(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}}}
+	model := NewModel(cfg, schema, nil, "0.0.412", config.DefaultPath(), config.ScopeUser, tmpDir)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}}
+
+	// First S: User → Project
+	newModel, _ := model.Update(msg)
+	m := newModel.(*Model)
+	if m.activeScope != config.ScopeProject {
+		t.Errorf("after 1st S: expected ScopeProject, got %v", m.activeScope)
+	}
+
+	// Second S: Project → ProjectLocal
+	newModel, _ = m.Update(msg)
+	m = newModel.(*Model)
+	if m.activeScope != config.ScopeProjectLocal {
+		t.Errorf("after 2nd S: expected ScopeProjectLocal, got %v", m.activeScope)
+	}
+
+	// Third S: ProjectLocal → User
+	newModel, _ = m.Update(msg)
+	m = newModel.(*Model)
+	if m.activeScope != config.ScopeUser {
+		t.Errorf("after 3rd S: expected ScopeUser, got %v", m.activeScope)
+	}
+}
+
+// UT-TUI-096: Scope switch with missing file results in empty config (no error)
+func TestScopeSwitch_MissingFile(t *testing.T) {
+	tmpDir := t.TempDir() // no .copilot/ directory or files
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}}}
+	model := NewModel(cfg, schema, nil, "0.0.412", config.DefaultPath(), config.ScopeUser, tmpDir)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}}
+	newModel, _ := model.Update(msg)
+	m := newModel.(*Model)
+
+	if m.err != nil {
+		t.Errorf("expected no error after scope switch with missing file, got %v", m.err)
+	}
+	if m.cfg == nil {
+		t.Fatal("expected non-nil config after scope switch with missing file")
+	}
+	if len(m.cfg.Keys()) != 0 {
+		t.Errorf("expected empty config (0 keys), got %d keys", len(m.cfg.Keys()))
+	}
+}
+
+// UT-TUI-097: S key in StateEditing does not change scope
+func TestScopeSwitch_IgnoredInEditing(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+	schema := []copilot.SchemaField{{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}}}
+	model := NewModel(cfg, schema, nil, "0.0.412", config.DefaultPath(), config.ScopeUser, tmpDir)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+	model.state = StateEditing
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}}
+	newModel, _ := model.Update(msg)
+	m := newModel.(*Model)
+
+	if m.activeScope != config.ScopeUser {
+		t.Errorf("expected activeScope ScopeUser (unchanged) in StateEditing, got %v", m.activeScope)
+	}
+	if m.state != StateEditing {
+		t.Errorf("expected state StateEditing (unchanged), got %v", m.state)
+	}
+}
+
+// UT-TUI-098: S key in StateEnvVars does not change scope
+func TestScopeSwitch_IgnoredInEnvVars(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.NewConfig()
+	envVars := []copilot.EnvVarInfo{{Names: []string{"TEST_VAR"}, Description: "test"}}
+	schema := []copilot.SchemaField{{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}}}
+	model := NewModel(cfg, schema, envVars, "0.0.412", config.DefaultPath(), config.ScopeUser, tmpDir)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+	model.state = StateEnvVars
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}}
+	newModel, _ := model.Update(msg)
+	m := newModel.(*Model)
+
+	if m.activeScope != config.ScopeUser {
+		t.Errorf("expected activeScope ScopeUser (unchanged) in StateEnvVars, got %v", m.activeScope)
+	}
+}
+
+// UT-TUI-099: After scope switch, configPath matches the new scope's path
+func TestScopeSwitch_ConfigPathUpdated(t *testing.T) {
+	tmpDir := t.TempDir()
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}}}
+	model := NewModel(cfg, schema, nil, "0.0.412", config.DefaultPath(), config.ScopeUser, tmpDir)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}}
+	newModel, _ := model.Update(msg)
+	m := newModel.(*Model)
+
+	expected := config.ProjectSettingsPath(tmpDir)
+	if m.configPath != expected {
+		t.Errorf("expected configPath %q, got %q", expected, m.configPath)
+	}
+}
+
+// UT-TUI-100: After scope switch to scope with config file, entries reflect new config data
+func TestScopeSwitch_LoadsConfigData(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create project config with specific value
+	projectCfg := config.NewConfig()
+	projectCfg.Set("model", "claude-sonnet-4.5")
+	if err := config.SaveConfig(config.ProjectSettingsPath(tmpDir), projectCfg); err != nil {
+		t.Fatalf("failed to save project config: %v", err)
+	}
+
+	// Start with user scope (empty config)
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4", "claude-sonnet-4.5"}},
+	}
+	model := NewModel(cfg, schema, nil, "0.0.412", config.DefaultPath(), config.ScopeUser, tmpDir)
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	// Switch to project scope
+	msg := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}}
+	newModel, _ := model.Update(msg)
+	m := newModel.(*Model)
+
+	got := m.cfg.Get("model")
+	if got != "claude-sonnet-4.5" {
+		t.Errorf("expected model = %q after scope switch, got %v", "claude-sonnet-4.5", got)
+	}
+}
+
+// UT-TUI-101: View() output contains [User] when activeScope is ScopeUser
+func TestViewContainsUserScopeLabel(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}, Description: "AI model"},
+	}
+
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/config.json", config.ScopeUser, "/tmp")
+	model.windowWidth = 120
+	model.windowHeight = 40
+	model.updateSizes()
+
+	output := model.View()
+	if !strings.Contains(output, "User") {
+		t.Error("View() output should contain 'User' scope label when activeScope is ScopeUser")
+	}
+}
+
+// UT-TUI-102: View() output contains [Project] when activeScope is ScopeProject
+func TestViewContainsProjectScopeLabel(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}, Description: "AI model"},
+	}
+
+	model := NewModel(cfg, schema, nil, "0.0.412", "/tmp/settings.json", config.ScopeProject, "/tmp")
+	model.windowWidth = 120
+	model.windowHeight = 40
+	model.updateSizes()
+
+	output := model.View()
+	if !strings.Contains(output, "Project") {
+		t.Error("View() output should contain 'Project' scope label when activeScope is ScopeProject")
+	}
+}
+
+// UT-TUI-103: View() output contains the scope's config path string
+func TestViewContainsScopeConfigPath(t *testing.T) {
+	cfg := config.NewConfig()
+	cfg.Set("model", "gpt-4")
+
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}, Description: "AI model"},
+	}
+
+	configPath := "/home/user/.copilot/config.json"
+	model := NewModel(cfg, schema, nil, "0.0.412", configPath, config.ScopeUser, "/tmp")
+	model.windowWidth = 120
+	model.windowHeight = 40
+	model.updateSizes()
+
+	output := model.View()
+	if !strings.Contains(output, configPath) {
+		t.Errorf("View() output should contain the config path %q", configPath)
+	}
+}
+
+// UT-TUI-104: ShortHelp(StateBrowsing) includes scope binding
+func TestShortHelpBrowsingIncludesScopeBinding(t *testing.T) {
+	km := DefaultKeyMap()
+	bindings := km.ShortHelp(StateBrowsing, "")
+
+	found := false
+	for _, b := range bindings {
+		if b.Help().Desc == "scope" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("ShortHelp(StateBrowsing) should include a binding with desc 'scope'")
+	}
+}
+
+// UT-TUI-105: ShortHelp(StateEditing) does NOT include scope binding
+func TestShortHelpEditingExcludesScopeBinding(t *testing.T) {
+	km := DefaultKeyMap()
+	bindings := km.ShortHelp(StateEditing, "")
+
+	for _, b := range bindings {
+		if b.Help().Desc == "scope" {
+			t.Error("ShortHelp(StateEditing) should NOT include a binding with desc 'scope'")
+		}
+	}
+}
+
+// IT-006: TUI scope cycling loads correct config files
+func TestScopeCyclingLoadsCorrectConfigIntegration(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create project config with specific value
+	projectCfg := config.NewConfig()
+	projectCfg.Set("model", "project-model")
+	if err := config.SaveConfig(config.ProjectSettingsPath(tmpDir), projectCfg); err != nil {
+		t.Fatalf("failed to save project config: %v", err)
+	}
+
+	// Create project-local config with different value
+	localCfg := config.NewConfig()
+	localCfg.Set("model", "local-model")
+	if err := config.SaveConfig(config.ProjectLocalSettingsPath(tmpDir), localCfg); err != nil {
+		t.Fatalf("failed to save project-local config: %v", err)
+	}
+
+	// Start with user scope (empty config)
+	cfg := config.NewConfig()
+	schema := []copilot.SchemaField{
+		{Name: "model", Type: "enum", Default: "gpt-4", Options: []string{"gpt-4"}},
+	}
+	// Use a non-existent user config path so we get an empty config on cycling back
+	userConfigPath := filepath.Join(tmpDir, "user-config", "config.json")
+	model := NewModel(cfg, schema, nil, "1.0.0", userConfigPath, config.ScopeUser, tmpDir)
+	// Override the user scope path to our non-existent path
+	model.scopePaths[config.ScopeUser] = userConfigPath
+	model.windowWidth = 100
+	model.windowHeight = 30
+	model.updateSizes()
+
+	sKey := tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'S'}}
+
+	// Step 1: Press S → scope switches to ScopeProject
+	newModel, _ := model.Update(sKey)
+	m := newModel.(*Model)
+	if m.activeScope != config.ScopeProject {
+		t.Errorf("after first S, activeScope = %v, want ScopeProject", m.activeScope)
+	}
+	if got := m.cfg.Get("model"); got != "project-model" {
+		t.Errorf("after switch to project, model = %v, want project-model", got)
+	}
+
+	// Step 2: Press S → scope switches to ScopeProjectLocal
+	newModel, _ = m.Update(sKey)
+	m = newModel.(*Model)
+	if m.activeScope != config.ScopeProjectLocal {
+		t.Errorf("after second S, activeScope = %v, want ScopeProjectLocal", m.activeScope)
+	}
+	if got := m.cfg.Get("model"); got != "local-model" {
+		t.Errorf("after switch to project-local, model = %v, want local-model", got)
+	}
+
+	// Step 3: Press S → scope switches back to ScopeUser
+	newModel, _ = m.Update(sKey)
+	m = newModel.(*Model)
+	if m.activeScope != config.ScopeUser {
+		t.Errorf("after third S, activeScope = %v, want ScopeUser", m.activeScope)
+	}
+	if got := m.cfg.Get("model"); got != nil {
+		t.Errorf("after switch back to user, model = %v, want nil (empty config)", got)
+	}
+
+	// Verify the model can render without panic
+	output := m.View()
+	if output == "" {
+		t.Error("View() returned empty string after scope cycling")
 	}
 }
