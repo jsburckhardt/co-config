@@ -15,6 +15,12 @@ A TUI tool to interactively configure and view GitHub Copilot CLI settings.
 curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.sh | sh
 ```
 
+> When installing without root privileges, the binary is placed in `~/.local/bin` and the installer automatically adds it to your `PATH` via your shell profile (`~/.bashrc`, `~/.zshrc`, etc.). To opt out of automatic PATH configuration:
+>
+> ```bash
+> NO_PATH_UPDATE=1 curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.sh | sh
+> ```
+
 ### Version-pinned install
 
 ```bash

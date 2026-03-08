@@ -14,6 +14,7 @@ This file is the single registry of all architectural decisions and core-compone
 | ADR-0007 | [Windows Platform Support](ADR-0007-windows-platform-support.md) | Accepted | 2025-07-11 |
 | ADR-0008 | [Multi-Scope Configuration](ADR-0008-multi-scope-configuration.md) | Accepted | 2025-07-14 |
 | ADR-0009 | [Namespace-Based Field Categorisation](ADR-0009-namespace-field-categorisation.md) | Accepted | 2025-07-14 |
+| ADR-0010 | [Automatic PATH Configuration in install.sh](ADR-0010-install-sh-path-management.md) | Accepted | 2025-07-15 |
 
 ## Core-Components
 
@@ -89,3 +90,9 @@ Short, actionable statements derived from ADRs and core-components. More than on
 | 56 | Support three config scopes: user, project, and project-local | CC-0004 | 2025-07-14 |
 | 57 | Write config only to the active scope — never cross-scope writes | CC-0004 | 2025-07-14 |
 | 58 | Provide `ProjectSettingsPath()` and `ProjectLocalSettingsPath()` path functions | CC-0004 | 2025-07-14 |
+| 59 | Use `~/.local/bin` as the non-root fallback install directory instead of `~/bin` | ADR-0010 | 2025-07-15 |
+| 60 | Auto-configure PATH in the user's shell profile when installing to `~/.local/bin` | ADR-0010 | 2025-07-15 |
+| 61 | Detect user shell via `$SHELL` and modify `.zshrc`, `.bashrc`, or `.profile` accordingly | ADR-0010 | 2025-07-15 |
+| 62 | Support `NO_PATH_UPDATE=1` env var to opt out of shell profile modification | ADR-0010 | 2025-07-15 |
+| 63 | Guard PATH profile entries with deduplication — grep before append, no duplicates on re-install | ADR-0010 | 2025-07-15 |
+| 64 | Require install.sh to configure PATH when falling back to user-local directory | CC-0006 | 2025-07-15 |

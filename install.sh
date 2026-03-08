@@ -3,7 +3,7 @@
 # Usage:
 #   curl -sSfL https://raw.githubusercontent.com/jsburckhardt/co-config/main/install.sh | sh
 #   curl -sSfL ... | sh -s -- --version v1.2.3
-#   INSTALL_DIR=~/bin curl -sSfL ... | sh
+#   INSTALL_DIR=~/.local/bin curl -sSfL ... | sh
 set -e
 
 # ── Constants ────────────────────────────────────────────────────────────────
@@ -167,11 +167,16 @@ extract_and_install() {
   info "Extracting ${BINARY_NAME}..."
   tar -xzf "${TEMP_DIR}/${ARCHIVE_NAME}" -C "${TEMP_DIR}"
 
-  # Determine install directory
+  # Determine install directory (XDG standard: ~/.local/bin)
   target_dir="${INSTALL_DIR:-/usr/local/bin}"
+  _used_fallback=""
 
-  if [ ! -d "${target_dir}" ] || ! test_writable "${target_dir}"; then
-    target_dir="${HOME}/bin"
+  if [ -n "${INSTALL_DIR:-}" ]; then
+    # User explicitly set INSTALL_DIR — use it as-is
+    mkdir -p "${target_dir}"
+  elif [ ! -d "${target_dir}" ] || ! test_writable "${target_dir}"; then
+    target_dir="${HOME}/.local/bin"
+    _used_fallback="1"
     info "Default install directory not writable, falling back to ${target_dir}"
     mkdir -p "${target_dir}"
   fi
@@ -180,6 +185,87 @@ extract_and_install() {
   install -m 755 "${TEMP_DIR}/${BINARY_NAME}" "${target_dir}/${BINARY_NAME}"
 
   info "Successfully installed ${BINARY_NAME} ${VERSION} to ${target_dir}/${BINARY_NAME}"
+
+  # Only auto-configure PATH for the automatic fallback directory
+  if [ -n "${_used_fallback}" ]; then
+    configure_path "${target_dir}"
+  fi
+}
+
+# ── PATH Management ──────────────────────────────────────────────────────────
+
+configure_path() {
+  target_dir="$1"
+
+  # Already in PATH — nothing to do
+  case ":${PATH}:" in
+    *":${target_dir}:"*)
+      info "${target_dir} is already in PATH"
+      return
+      ;;
+  esac
+
+  # Opt-out
+  if [ "${NO_PATH_UPDATE:-0}" = "1" ]; then
+    info "Skipping PATH update (NO_PATH_UPDATE=1)"
+    return
+  fi
+
+  info "${target_dir} is not in your PATH. Configuring..."
+
+  _export_line="export PATH=\"${target_dir}:\$PATH\""
+  _modified=""
+
+  _profile="$(detect_shell_profile)"
+  if [ -n "${_profile}" ]; then
+    _try_add_to_profile "${_profile}" "${_export_line}" && _modified="${_profile}"
+  fi
+
+  if [ -n "${_modified}" ]; then
+    info "Added ${target_dir} to PATH in ${_modified}"
+    info "Restart your shell or run:  source ${_modified}"
+  else
+    info ""
+    info "⚠  Could not update shell profile automatically."
+    info "  Add this line to your shell profile (~/.bashrc, ~/.zshrc, etc.):"
+    info ""
+    info "  ${_export_line}"
+    info ""
+  fi
+}
+
+detect_shell_profile() {
+  _shell="$(basename "${SHELL:-/bin/sh}")"
+  case "${_shell}" in
+    zsh)  echo "${HOME}/.zshrc" ;;
+    bash)
+      if [ -f "${HOME}/.bashrc" ]; then
+        echo "${HOME}/.bashrc"
+      elif [ -f "${HOME}/.bash_profile" ]; then
+        echo "${HOME}/.bash_profile"
+      else
+        echo "${HOME}/.profile"
+      fi
+      ;;
+    *)    echo "${HOME}/.profile" ;;
+  esac
+}
+
+_try_add_to_profile() {
+  _profile="$1"
+  _line="$2"
+
+  # Don't duplicate if already present
+  if [ -f "${_profile}" ] && grep -qF "${_line}" "${_profile}" 2>/dev/null; then
+    return 0
+  fi
+
+  # Append the export line
+  if printf '\n# Added by ccc installer\n%s\n' "${_line}" >> "${_profile}" 2>/dev/null; then
+    return 0
+  fi
+
+  return 1
 }
 
 # ── Writability Check ────────────────────────────────────────────────────────
