@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.4](https://github.com/jsburckhardt/co-config/compare/v0.1.3...v0.1.4) (2026-03-08)
+
+
+### Features
+
+* add Copilot CLI GA config parity with multi-scope support ([f61279b](https://github.com/jsburckhardt/co-config/commit/f61279ba661ae0b674d95946ae2fda7bf496e43d))
+* add multi-scope configuration with CLI flag and TUI support ([2ecf64d](https://github.com/jsburckhardt/co-config/commit/2ecf64d5b63bb1cfbf0b1e5e0dcfa80f72b608fd))
+* add Windows platform support ([00ec402](https://github.com/jsburckhardt/co-config/commit/00ec402e3f6ece471f87104d87a9384593a0af64))
+* add Windows platform support ([f4272ec](https://github.com/jsburckhardt/co-config/commit/f4272ec4b62d87251f66b5f69174303fabbe8d4d))
+* update test fixtures and categorisation for Copilot CLI GA fields ([0948655](https://github.com/jsburckhardt/co-config/commit/0948655ccd9cb1f52d3e8f8f1de8733410254be7))
+
+
+### Bug Fixes
+
+* make tests cross-platform for Windows CI ([823e4d4](https://github.com/jsburckhardt/co-config/commit/823e4d48175dfeca49264ec91b6c1b13cc12cca8))
+
 ## [0.1.3](https://github.com/jsburckhardt/co-config/compare/v0.1.2...v0.1.3) (2026-03-05)
 
 
