@@ -29,6 +29,7 @@ func main() {
 
 	rootCmd.Version = version
 	rootCmd.PersistentFlags().String("log-level", "warn", "Log level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().String("scope", "user", "Config scope to edit (user, project, local)")
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
@@ -81,8 +82,21 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	slog.Info("detected environment variables", "count", len(envVars))
 
+	// Parse --scope flag
+	scopeStr, _ := cmd.Flags().GetString("scope")
+	scope, err := config.ParseScope(scopeStr)
+	if err != nil {
+		return fmt.Errorf("invalid --scope flag: %w", err)
+	}
+
+	// Resolve project directory (used for project and local scopes)
+	projectDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting working directory: %w", err)
+	}
+
 	// Load config
-	configPath := config.DefaultPath()
+	configPath := config.ScopePathFor(scope, projectDir)
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
 		if errors.Is(err, config.ErrConfigNotFound) {
@@ -95,7 +109,7 @@ func run(cmd *cobra.Command, args []string) error {
 	slog.Info("loaded config", "path", configPath, "keys", len(cfg.Keys()))
 
 	// Build and run TUI with alt-screen mode
-	model := tui.NewModel(cfg, schema, envVars, copilotVersion, configPath)
+	model := tui.NewModel(cfg, schema, envVars, copilotVersion, configPath, scope, projectDir)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		return fmt.Errorf("running TUI: %w", err)

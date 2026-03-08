@@ -86,6 +86,14 @@ Configuration Settings:
     - Shows what the agent is currently working on in the terminal title bar
     - Only works on supported terminal emulators (xterm, iTerm, Windows Terminal, etc.)
 
+  `store_token_plaintext`: whether to store the authentication token in plaintext instead of using the system keychain; defaults to `false`.
+
+  `reasoning_effort`: level of reasoning effort for the AI model; defaults to "medium".
+    - "low"
+    - "medium"
+    - "high"
+    - "xhigh"
+
   `ide.auto_connect`: whether to automatically connect to an IDE workspace on startup; defaults to `true`.
     - When `false`, the CLI will not auto-connect to IDEs or watch for new IDE lock files
     - You can still manually connect using the /ide command

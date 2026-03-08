@@ -371,6 +371,147 @@ func TestSaveConfig_CreatesDirectory(t *testing.T) {
 	}
 }
 
+// UT-CFG-014: ProjectSettingsPath constructs correct path
+func TestProjectSettingsPath(t *testing.T) {
+	result := ProjectSettingsPath("/home/user/myproject")
+	expected := filepath.Join("/home/user/myproject", ".copilot", "settings.json")
+	if result != expected {
+		t.Errorf("ProjectSettingsPath() = %q, want %q", result, expected)
+	}
+}
+
+// UT-CFG-015: ProjectLocalSettingsPath constructs correct path
+func TestProjectLocalSettingsPath(t *testing.T) {
+	result := ProjectLocalSettingsPath("/home/user/myproject")
+	expected := filepath.Join("/home/user/myproject", ".copilot", "settings.local.json")
+	if result != expected {
+		t.Errorf("ProjectLocalSettingsPath() = %q, want %q", result, expected)
+	}
+}
+
+// UT-CFG-016: ScopePathFor dispatches correctly for all scopes
+func TestScopePathFor(t *testing.T) {
+	projectDir := "/tmp/testproject"
+
+	// ScopeUser should return DefaultPath()
+	userPath := ScopePathFor(ScopeUser, projectDir)
+	if userPath != DefaultPath() {
+		t.Errorf("ScopePathFor(ScopeUser) = %q, want %q", userPath, DefaultPath())
+	}
+
+	// ScopeProject should return ProjectSettingsPath
+	projectPath := ScopePathFor(ScopeProject, projectDir)
+	expectedProject := ProjectSettingsPath(projectDir)
+	if projectPath != expectedProject {
+		t.Errorf("ScopePathFor(ScopeProject) = %q, want %q", projectPath, expectedProject)
+	}
+
+	// ScopeProjectLocal should return ProjectLocalSettingsPath
+	localPath := ScopePathFor(ScopeProjectLocal, projectDir)
+	expectedLocal := ProjectLocalSettingsPath(projectDir)
+	if localPath != expectedLocal {
+		t.Errorf("ScopePathFor(ScopeProjectLocal) = %q, want %q", localPath, expectedLocal)
+	}
+}
+
+// UT-CFG-017: Scope.String() returns correct CLI values
+func TestScope_String(t *testing.T) {
+	tests := []struct {
+		scope    Scope
+		expected string
+	}{
+		{ScopeUser, "user"},
+		{ScopeProject, "project"},
+		{ScopeProjectLocal, "local"},
+	}
+	for _, tt := range tests {
+		got := tt.scope.String()
+		if got != tt.expected {
+			t.Errorf("Scope(%d).String() = %q, want %q", tt.scope, got, tt.expected)
+		}
+	}
+}
+
+// UT-CFG-018: Scope.Label() returns correct TUI labels
+func TestScope_Label(t *testing.T) {
+	tests := []struct {
+		scope    Scope
+		expected string
+	}{
+		{ScopeUser, "User"},
+		{ScopeProject, "Project"},
+		{ScopeProjectLocal, "Project-Local"},
+	}
+	for _, tt := range tests {
+		got := tt.scope.Label()
+		if got != tt.expected {
+			t.Errorf("Scope(%d).Label() = %q, want %q", tt.scope, got, tt.expected)
+		}
+	}
+}
+
+// UT-CFG-019: ParseScope accepts valid values and rejects invalid
+func TestParseScope(t *testing.T) {
+	// Valid values
+	validTests := []struct {
+		input    string
+		expected Scope
+	}{
+		{"user", ScopeUser},
+		{"project", ScopeProject},
+		{"local", ScopeProjectLocal},
+	}
+	for _, tt := range validTests {
+		scope, err := ParseScope(tt.input)
+		if err != nil {
+			t.Errorf("ParseScope(%q) returned unexpected error: %v", tt.input, err)
+		}
+		if scope != tt.expected {
+			t.Errorf("ParseScope(%q) = %v, want %v", tt.input, scope, tt.expected)
+		}
+	}
+
+	// Invalid values
+	invalidTests := []string{"invalid", ""}
+	for _, input := range invalidTests {
+		_, err := ParseScope(input)
+		if err == nil {
+			t.Errorf("ParseScope(%q) should return error, got nil", input)
+		}
+	}
+}
+
+// UT-CFG-020: Round-trip with project settings path
+func TestRoundTrip_ProjectSettingsPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	settingsPath := ProjectSettingsPath(tmpDir)
+
+	// Create and save config
+	cfg := NewConfig()
+	cfg.Set("model", "gpt-5.2")
+
+	if err := SaveConfig(settingsPath, cfg); err != nil {
+		t.Fatalf("SaveConfig failed: %v", err)
+	}
+
+	// Verify .copilot/ directory was created
+	copilotDir := filepath.Join(tmpDir, ".copilot")
+	if _, err := os.Stat(copilotDir); os.IsNotExist(err) {
+		t.Error(".copilot directory was not created")
+	}
+
+	// Load and verify
+	cfg2, err := LoadConfig(settingsPath)
+	if err != nil {
+		t.Fatalf("LoadConfig failed: %v", err)
+	}
+
+	model := cfg2.Get("model")
+	if model != "gpt-5.2" {
+		t.Errorf("Get(\"model\") = %v, want gpt-5.2", model)
+	}
+}
+
 // Test: DefaultPath returns a non-empty absolute path
 func TestDefaultPath_ReturnsAbsolutePath(t *testing.T) {
 	path := DefaultPath()

@@ -12,6 +12,8 @@ This file is the single registry of all architectural decisions and core-compone
 | ADR-0005 | [Release Automation Tooling (GoReleaser)](ADR-0005-release-automation-tooling.md) | Accepted | 2025-06-30 |
 | ADR-0006 | [Binary Signing and Supply-Chain Security Strategy](ADR-0006-binary-signing-supply-chain-security.md) | Accepted | 2025-06-30 |
 | ADR-0007 | [Windows Platform Support](ADR-0007-windows-platform-support.md) | Accepted | 2025-07-11 |
+| ADR-0008 | [Multi-Scope Configuration](ADR-0008-multi-scope-configuration.md) | Accepted | 2025-07-14 |
+| ADR-0009 | [Namespace-Based Field Categorisation](ADR-0009-namespace-field-categorisation.md) | Accepted | 2025-07-14 |
 
 ## Core-Components
 
@@ -19,7 +21,7 @@ This file is the single registry of all architectural decisions and core-compone
 |----|-------|--------|------|
 | CC-0002 | [Error Handling](../core-components/CORE-COMPONENT-0002-error-handling.md) | Adopted | 2026-02-20 |
 | CC-0003 | [Logging](../core-components/CORE-COMPONENT-0003-logging.md) | Adopted | 2026-02-20 |
-| CC-0004 | [Configuration Management](../core-components/CORE-COMPONENT-0004-configuration-management.md) | Adopted | 2026-02-20 |
+| CC-0004 | [Configuration Management](../core-components/CORE-COMPONENT-0004-configuration-management.md) | Adopted | 2025-07-14 |
 | CC-0005 | [Sensitive Data Handling](../core-components/CORE-COMPONENT-0005-sensitive-data-handling.md) | Adopted | 2026-02-20 |
 | CC-0006 | [Release Pipeline](../core-components/CORE-COMPONENT-0006-release-pipeline.md) | Adopted | 2025-06-30 |
 
@@ -74,3 +76,16 @@ Short, actionable statements derived from ADRs and core-components. More than on
 | 43 | Provide install.ps1 as the native PowerShell installer for Windows | ADR-0007 | 2025-07-11 |
 | 44 | Install ccc.exe to $env:LOCALAPPDATA\Programs\ccc without requiring admin | ADR-0007 | 2025-07-11 |
 | 45 | Require SHA256 checksum verification in install.ps1 via Get-FileHash | ADR-0007 | 2025-07-11 |
+| 46 | Add `--scope user\|project\|local` CLI flag defaulting to `user` | ADR-0008 | 2025-07-14 |
+| 47 | Resolve project config paths relative to current working directory | ADR-0008 | 2025-07-14 |
+| 48 | Cycle TUI config scope with Shift+S in browsing mode only | ADR-0008 | 2025-07-14 |
+| 49 | Load and edit each config scope independently — no merged view | ADR-0008 | 2025-07-14 |
+| 50 | Display active scope label and file path in TUI header | ADR-0008 | 2025-07-14 |
+| 51 | Replace `isXxxField()` functions with a declarative category map | ADR-0009 | 2025-07-14 |
+| 52 | Support exact-match and prefix-match rules for field-to-category routing | ADR-0009 | 2025-07-14 |
+| 53 | Remove `parallel_tool_execution` ghost field from categorisation | ADR-0009 | 2025-07-14 |
+| 54 | Categorise `mouse` field under the Display category | ADR-0009 | 2025-07-14 |
+| 55 | Categorise `ide.*` fields under a new IDE Integration category | ADR-0009 | 2025-07-14 |
+| 56 | Support three config scopes: user, project, and project-local | CC-0004 | 2025-07-14 |
+| 57 | Write config only to the active scope — never cross-scope writes | CC-0004 | 2025-07-14 |
+| 58 | Provide `ProjectSettingsPath()` and `ProjectLocalSettingsPath()` path functions | CC-0004 | 2025-07-14 |

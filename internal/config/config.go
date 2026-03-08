@@ -7,6 +7,80 @@ import (
 	"path/filepath"
 )
 
+// Scope represents the configuration scope level.
+type Scope int
+
+const (
+	ScopeUser         Scope = iota // ~/.copilot/config.json
+	ScopeProject                   // <dir>/.copilot/settings.json
+	ScopeProjectLocal              // <dir>/.copilot/settings.local.json
+)
+
+// String returns the CLI flag value for the scope.
+func (s Scope) String() string {
+	switch s {
+	case ScopeUser:
+		return "user"
+	case ScopeProject:
+		return "project"
+	case ScopeProjectLocal:
+		return "local"
+	default:
+		return "user"
+	}
+}
+
+// Label returns a human-readable label for TUI header display.
+func (s Scope) Label() string {
+	switch s {
+	case ScopeUser:
+		return "User"
+	case ScopeProject:
+		return "Project"
+	case ScopeProjectLocal:
+		return "Project-Local"
+	default:
+		return "User"
+	}
+}
+
+// ParseScope parses a string into a Scope value.
+// Accepts "user", "project", or "local". Returns an error for unknown values.
+func ParseScope(s string) (Scope, error) {
+	switch s {
+	case "user":
+		return ScopeUser, nil
+	case "project":
+		return ScopeProject, nil
+	case "local":
+		return ScopeProjectLocal, nil
+	default:
+		return ScopeUser, fmt.Errorf("invalid scope %q: must be user, project, or local", s)
+	}
+}
+
+// ProjectSettingsPath returns the project-level settings path for the given project directory.
+func ProjectSettingsPath(projectDir string) string {
+	return filepath.Join(projectDir, ".copilot", "settings.json")
+}
+
+// ProjectLocalSettingsPath returns the project-local settings path for the given project directory.
+func ProjectLocalSettingsPath(projectDir string) string {
+	return filepath.Join(projectDir, ".copilot", "settings.local.json")
+}
+
+// ScopePathFor returns the config file path for the given scope and project directory.
+func ScopePathFor(scope Scope, projectDir string) string {
+	switch scope {
+	case ScopeProject:
+		return ProjectSettingsPath(projectDir)
+	case ScopeProjectLocal:
+		return ProjectLocalSettingsPath(projectDir)
+	default:
+		return DefaultPath()
+	}
+}
+
 // Config holds the copilot CLI configuration.
 // All fields are stored in a single map to ensure round-trip fidelity.
 type Config struct {

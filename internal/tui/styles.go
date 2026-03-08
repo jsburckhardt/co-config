@@ -90,6 +90,10 @@ var (
 	optionStyle         = lipgloss.NewStyle().Foreground(lipgloss.AdaptiveColor{Light: "#2D3748", Dark: "#E2E8F0"})
 	errorStyle          = lipgloss.NewStyle().Foreground(errorColor).Bold(true)
 
+	scopeLabelStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(secondaryColor)
+
 	helpStyle = lipgloss.NewStyle().Foreground(mutedColor)
 
 	envVarNameStyle = lipgloss.NewStyle().

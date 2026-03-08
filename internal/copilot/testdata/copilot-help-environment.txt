@@ -21,3 +21,7 @@ Environment Variables:
   `XDG_CONFIG_HOME`: override the directory where configuration files are stored; defaults to `$HOME/.copilot`.
 
   `XDG_STATE_HOME`: override the directory where state files are stored; defaults to `$HOME/.copilot`.
+
+  `COPILOT_SKILLS_DIRS`: comma-separated list of additional directories to search for skills.
+
+  `COPILOT_CLI_ENABLED_FEATURE_FLAGS`: comma-separated list of feature flags to enable.
