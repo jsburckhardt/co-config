@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -139,6 +140,10 @@ func TestInit_DebugLevelWritesDebugEntry(t *testing.T) {
 
 // UT-LOG-005: Init with invalid path returns error
 func TestInit_InvalidPathReturnsError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping: Windows does not enforce POSIX directory permissions")
+	}
+
 	originalLogger := slog.Default()
 	t.Cleanup(func() {
 		slog.SetDefault(originalLogger)
@@ -274,10 +279,13 @@ func TestInit_FilePermissions(t *testing.T) {
 	}
 
 	// File should have 0600 permissions (owner read/write only)
-	expectedPerms := os.FileMode(0600)
-	actualPerms := info.Mode().Perm()
-	if actualPerms != expectedPerms {
-		t.Errorf("File permissions = %v, want %v", actualPerms, expectedPerms)
+	// Windows does not support POSIX permission bits
+	if runtime.GOOS != "windows" {
+		expectedPerms := os.FileMode(0600)
+		actualPerms := info.Mode().Perm()
+		if actualPerms != expectedPerms {
+			t.Errorf("File permissions = %v, want %v", actualPerms, expectedPerms)
+		}
 	}
 }
 
