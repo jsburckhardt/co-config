@@ -10,6 +10,7 @@
         "ghcr.io/devcontainers/features/go:1": {
             "version": "latest"
         },
+        "ghcr.io/devcontainers/features/node": {},
         "ghcr.io/stuartleeks/dev-container-features/shell-history": {},
         "ghcr.io/jsburckhardt/devcontainer-features/just": {},
         "ghcr.io/devcontainers/features/github-cli": {},
