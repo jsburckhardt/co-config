@@ -6,14 +6,12 @@ tools:
   - search/fileSearch
   - search/textSearch
   - read/readFile
-  - read/listDir
   - read/problems
   - edit/createDirectory
   - edit/createFile
   - edit/editFiles
   - execute/runInTerminal
   - execute/getTerminalOutput
-  - execute/runTests
   - execute/testFailure
   - todo
 user-invocable: true
@@ -81,6 +79,7 @@ CURRENT_WI_ID: ""
 CURRENT_TASK_ID: ""
 TASK_BREAKDOWN: ""
 TEST_PLAN: ""
+TEST_COMMAND: ""
 RELEVANT_ADRS: []
 RELEVANT_CORE_COMPONENTS: []
 COMPLETED_TASKS: []
@@ -113,6 +112,9 @@ USE `search/fileSearch` where: pattern="docs/architecture/core-components/CORE-C
 CAPTURE ALL_CORE_COMPONENTS from `search/fileSearch`
 SET RELEVANT_ADRS := <ADRS> (from "Agent Inference" using TASK_BREAKDOWN, ALL_ADRS)
 SET RELEVANT_CORE_COMPONENTS := <COMPONENTS> (from "Agent Inference" using TASK_BREAKDOWN, ALL_CORE_COMPONENTS)
+USE `search/fileSearch` where: pattern="go.mod,package.json,pytest.ini,pyproject.toml,Makefile"
+CAPTURE PROJECT_SIGNALS from `search/fileSearch`
+SET TEST_COMMAND := <CMD> (from "Agent Inference" using PROJECT_SIGNALS)
 </process>
 
 <process id="implement-task" name="Implement the next pending task">
@@ -124,8 +126,8 @@ SET CODE_CHANGES := <CHANGES> (from "Agent Inference" using TASK_SPEC, RELEVANT_
 </process>
 
 <process id="verify-task" name="Run tests to verify the implemented task">
-USE `execute/runTests`
-CAPTURE TEST_OUTPUT from `execute/runTests`
+USE `execute/runInTerminal` where: command=TEST_COMMAND
+CAPTURE TEST_OUTPUT from `execute/runInTerminal`
 SET TEST_PASSED := <RESULT> (from "Agent Inference" using TEST_OUTPUT, TEST_PLAN, CURRENT_TASK_ID)
 IF TEST_PASSED is false:
   USE `execute/testFailure`
